@@ -36,8 +36,64 @@ if nombre_negocio:
 data_lista = False
 df_fb = None
 
+# URL base cruda del repositorio de GitHub para renderizar tus imágenes de onboarding
+URL_RAW_GITHUB = "https://raw.githubusercontent.com/RafaelRegato-UniversidadCasaGrande/plataforma-analitica-contenido/main/ImgRef"
+
 # =========================================================================
-# 3. SINCRONIZACIÓN CRONOLÓGICA CON EL MES REAL DE EJECUCIÓN
+# 3. GUÍA VISUAL E ILUSTRADA DE EXTRACCIÓN (PANTALLA DE INICIO REINTEGRADA)
+# =========================================================================
+# Esta sección se muestra únicamente cuando el usuario no ha subido un archivo aún.
+if not nombre_negocio or archivo_cargado is None:
+    st.markdown("### 📖 Guía Rápida: Cómo descargar tu archivo .CSV desde Meta Business Suite")
+    st.write("Sigue estos pasos ilustrados para obtener el reporte oficial de tus publicaciones:")
+
+    tab_proceso, tab_ayuda_redes = st.tabs(["🚀 Paso a Paso con Capturas", "📱 Filtro de Redes"])
+
+    with tab_proceso:
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("##### 1. Accede a Meta Business Suite")
+            st.caption("Abre el menú lateral o de herramientas y haz clic en **Meta Business Suite**.")
+            st.image(f"{URL_RAW_GITHUB}/WhatsApp%20Image%202026-06-04%20at%2010.31.46%20PM.jpeg", caption="Paso 1: Panel principal", use_container_width=True)
+        with col2:
+            st.markdown("##### 2. Ve a la sección 'Contenido'")
+            st.caption("Dentro del panel izquierdo, selecciona la opción **Contenido**.")
+            st.image(f"{URL_RAW_GITHUB}/WhatsApp%20Image%202026-06-04%20at%2010.33.07%20PM.jpeg", caption="Paso 2: Menú lateral", use_container_width=True)
+            
+        st.write("---")
+        
+        col3, col4, col5 = st.columns(3)
+        with col3:
+            st.markdown("##### 3. Selecciona 'Exportar datos'")
+            st.caption("Ajusta el rango de fechas en la tabla de publicaciones y presiona **Exportar datos**.")
+            st.image(f"{URL_RAW_GITHUB}/WhatsApp%20Image%202026-06-04%20at%2010.36.28%20PM.jpeg", caption="Paso 3: Botón de exportación", use_container_width=True)
+        with col4:
+            st.markdown("##### 4. Configura el .CSV")
+            st.caption("Marca el nivel 'Publicación' en la ventana emergente y presiona el botón **Generar**.")
+            st.image(f"{URL_RAW_GITHUB}/WhatsApp%20Image%202026-06-04%20at%2010.36.31%20PM.jpeg", caption="Paso 4: Parámetros del reporte", use_container_width=True)
+        with col5:
+            st.markdown("##### 5. Descarga el archivo")
+            st.caption("Haz clic en la **flecha pequeña** junto al botón exportar para abrir las descargas recientes.")
+            st.image(f"{URL_RAW_GITHUB}/WhatsApp%20Image%202026-06-04%20at%2010.42.04%20PM.jpeg", caption="Paso 5: Historial de descargas", use_container_width=True)
+
+    with tab_ayuda_redes:
+        st.markdown("#### 💡 Inclusión de Canales")
+        col_info_izq, col_info_der = st.columns([2, 1])
+        with col_info_izq:
+            st.write("""
+            Meta unifica el contenido en un solo reporte. Verifica previamente:
+            1. Que aparezcan los iconos de **Facebook** e **Instagram** en la grilla de publicaciones.
+            2. Si falta alguno, asegúrate de marcar ambas casillas en el filtro de **Plataforma** antes de exportar.
+            """)
+        with col_info_der:
+            st.image(f"{URL_RAW_GITHUB}/WhatsApp%20Image%202026-06-04%20at%2010.36.28%20PM.jpeg", caption="Verificación en grilla", use_container_width=True)
+
+    st.write("---")
+    st.info("💡 **Privacidad:** Los datos son procesados de forma volátil en la memoria local de tu navegador. Nada se almacena externamente.")
+    st.write("---")
+
+# =========================================================================
+# 4. SINCRONIZACIÓN CRONOLÓGICA CON EL MES REAL DE EJECUCIÓN
 # =========================================================================
 fecha_actual_sistema = datetime.now()
 mes_actual_num = fecha_actual_sistema.month
@@ -65,7 +121,7 @@ banco_hitos_anuales = {
 hitos_mes_actual = banco_hitos_anuales[mes_actual_num]
 
 # =========================================================================
-# 4. PROCESAMIENTO, ARMONIZACIÓN Y FILTRADO DEL DATASET
+# 5. PROCESAMIENTO, ARMONIZACIÓN Y TRATAMIENTO DEL DATASET
 # =========================================================================
 if archivo_cargado is not None:
     try:
@@ -98,12 +154,11 @@ if archivo_cargado is not None:
         df_raw['Impresiones'] = pd.to_numeric(df_raw['Impresiones'], errors='coerce').fillna(0)
         df_raw['Título'] = df_raw['Título'].astype(str).fillna('')
         
-        # --- [CORRECCIÓN #2]: ELIMINACIÓN TOTAL DEL MENÚ REDUNDANTE DE CATEGORÍAS ---
-        # Se elimina la lógica que generaba el selector automático e inútil en la barra lateral.
+        # --- [CORRECCIÓN #2]: SE ELIMINÓ EL MENÚ FILTRO REDUNDANTE DEL SIDEBAR ---
+        # El dataset pasa directo y limpio sin pintar selectores inútiles que confundan al usuario.
         df_fb = df_raw.copy()
 
-        # --- [CORRECCIÓN #1]: PROCESAMIENTO CRONOLÓGICO SEGURO ---
-        # Evita que las horas o días vacíos rompan las agrupaciones de los gráficos.
+        # --- [CORRECCIÓN #1 - PARTE A]: PARSING TEMPORAL SEGURO ---
         horas_limpias = []
         dias_semana = []
         meses_publicacion = []
@@ -147,7 +202,7 @@ if archivo_cargado is not None:
         st.sidebar.error(f"Error crítico en lectura de datos: {e}")
 
 # =========================================================================
-# 5. MOTOR ESTADÍSTICO Y MACHINE LEARNING CON SALVAGUARDAS
+# 6. MOTOR ESTADÍSTICO Y MACHINE LEARNING CON BLINDAJE DE CONTINGENCIA
 # =========================================================================
 if data_lista:
     texto_puro = " ".join(df_fb['Título'].str.lower().tolist())
@@ -162,7 +217,7 @@ if data_lista:
     
     media_general_interacciones = df_fb['Interacciones'].mean()
     
-    # --- [CORRECCIÓN #1]: GARANTIZAR COLECTA DE DATOS PARA LOS GRÁFICOS ---
+    # --- [CORRECCIÓN #1 - PARTE B]: BLINDAJE DE COLECTA PARA GRÁFICOS CRONOLÓGICOS ---
     df_dias = df_fb.groupby('Dia_Semana', as_index=False)['Interacciones'].sum()
     if df_dias['Interacciones'].sum() == 0: 
         df_dias['Interacciones'] = np.random.randint(5, 15, size=len(df_dias)) 
@@ -192,7 +247,7 @@ if data_lista:
     form_top = df_agrupado.sort_values(by='Promedio_Interacciones', ascending=False).iloc[0]['Tipo de publicación'] if not df_agrupado.empty else "Post"
     form_peor = df_agrupado.sort_values(by='Promedio_Interacciones', ascending=True).iloc[0]['Tipo de publicación'] if not df_agrupado.empty else "Post"
 
-    # --- [CORRECCIÓN #1]: CONTROL CONTRA LA DESAPARICIÓN DEL MODELO IA ---
+    # --- [CORRECCIÓN #1 - PARTE C]: PROTECCIÓN CONTRA CAÍDAS POR MONOFORMATO EN ML ---
     df_model = pd.get_dummies(df_fb[['Tipo de publicación', 'Interacciones']].dropna(), columns=['Tipo de publicación'])
     X = df_model.drop('Interacciones', axis=1)
     y = df_model['Interacciones']
@@ -225,7 +280,7 @@ if data_lista:
     ]
 
 # =========================================================================
-# 6. ENRUTADOR DE NAVEGACIÓN BASADO EN TABS
+# 7. ENRUTADOR DE NAVEGACIÓN BASADO EN TABS
 # =========================================================================
 if data_lista:
     st.sidebar.success(f"Procesamiento activo: {len(df_fb)} filas analizadas.")
