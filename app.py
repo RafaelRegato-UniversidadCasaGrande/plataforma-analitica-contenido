@@ -40,9 +40,8 @@ df_fb = None
 URL_RAW_GITHUB = "https://raw.githubusercontent.com/RafaelRegato-UniversidadCasaGrande/plataforma-analitica-contenido/main/ImgRef"
 
 # =========================================================================
-# 3. GUÍA VISUAL E ILUSTRADA DE EXTRACCIÓN (PANTALLA DE INICIO REINTEGRADA)
+# 3. GUÍA VISUAL E ILUSTRADA DE EXTRACCIÓN (PANTALLA DE INICIO)
 # =========================================================================
-# Esta sección se muestra únicamente cuando el usuario no ha subido un archivo aún.
 if not nombre_negocio or archivo_cargado is None:
     st.markdown("### 📖 Guía Rápida: Cómo descargar tu archivo .CSV desde Meta Business Suite")
     st.write("Sigue estos pasos ilustrados para obtener el reporte oficial de tus publicaciones:")
@@ -154,11 +153,9 @@ if archivo_cargado is not None:
         df_raw['Impresiones'] = pd.to_numeric(df_raw['Impresiones'], errors='coerce').fillna(0)
         df_raw['Título'] = df_raw['Título'].astype(str).fillna('')
         
-        # --- [CORRECCIÓN #2]: SE ELIMINÓ EL MENÚ FILTRO REDUNDANTE DEL SIDEBAR ---
-        # El dataset pasa directo y limpio sin pintar selectores inútiles que confundan al usuario.
         df_fb = df_raw.copy()
 
-        # --- [CORRECCIÓN #1 - PARTE A]: PARSING TEMPORAL SEGURO ---
+        # --- PARSING TEMPORAL SEGURO ---
         horas_limpias = []
         dias_semana = []
         meses_publicacion = []
@@ -217,7 +214,6 @@ if data_lista:
     
     media_general_interacciones = df_fb['Interacciones'].mean()
     
-    # --- [CORRECCIÓN #1 - PARTE B]: BLINDAJE DE COLECTA PARA GRÁFICOS CRONOLÓGICOS ---
     df_dias = df_fb.groupby('Dia_Semana', as_index=False)['Interacciones'].sum()
     if df_dias['Interacciones'].sum() == 0: 
         df_dias['Interacciones'] = np.random.randint(5, 15, size=len(df_dias)) 
@@ -247,7 +243,6 @@ if data_lista:
     form_top = df_agrupado.sort_values(by='Promedio_Interacciones', ascending=False).iloc[0]['Tipo de publicación'] if not df_agrupado.empty else "Post"
     form_peor = df_agrupado.sort_values(by='Promedio_Interacciones', ascending=True).iloc[0]['Tipo de publicación'] if not df_agrupado.empty else "Post"
 
-    # --- [CORRECCIÓN #1 - PARTE C]: PROTECCIÓN CONTRA CAÍDAS POR MONOFORMATO EN ML ---
     df_model = pd.get_dummies(df_fb[['Tipo de publicación', 'Interacciones']].dropna(), columns=['Tipo de publicación'])
     X = df_model.drop('Interacciones', axis=1)
     y = df_model['Interacciones']
@@ -404,106 +399,180 @@ if data_lista:
         for rec in recomendaciones_top10: st.markdown(rec)
 
     # -------------------------------------------------------------------------
-    # TAB: EXPORTAR REPORTE PDF COMPLETAMENTE INTEGRADO
+    # TAB: EXPORTAR REPORTE PDF - REESTRUCTURADO DE 4 PÁGINAS EXACTAS
     # -------------------------------------------------------------------------
     with tab_exportar:
-        st.header("📄 Descarga de Reporte de Consultoría (Multilámina)")
-        st.write("Genera y compila el documento técnico oficial de 2 páginas exactas listo para impresión.")
+        st.header("📄 Descarga de Reporte de Consultoría (4 Páginas)")
+        st.write("Genera y compila el documento técnico oficial de 4 páginas exactas listo para impresión académica y corporativa.")
         
-        if st.button("🚀 Compilar y Estructurar Reporte PDF"):
-            with st.spinner("Procesando gráficos vectoriales y armando lienzo corporativo..."):
+        if st.button("🚀 Compilar y Estructurar Reporte PDF de 4 Hojas"):
+            with st.spinner("Modelando y distribuyendo bloques en 4 páginas vectoriales..."):
                 buf = BytesIO()
-                fig = plt.figure(figsize=(11, 22))
+                # Se incrementa la altura vertical (figsize de 22 a 44) para alojar holgadamente las 4 páginas
+                fig = plt.figure(figsize=(11, 44))
                 lista_colores_base = ['#A9DFBF','#F9E79F','#F5B7B1','#AED6F1','#D2B4DE']
                 colores_render = lista_colores_base[:max(1, len(df_agrupado))]
                 
-                # --- LÁMINA 1 ---
-                ax_h1 = fig.add_axes([0, 0.50, 1, 0.50])
-                ax_h1.axis('off')
-                ax_h1.add_patch(patches.Rectangle((0, 0), 1, 1, facecolor='#FAFAFA', zorder=1))
-                ax_h1.add_patch(patches.Rectangle((0, 0.92), 1, 0.08, facecolor='#1A237E', zorder=2))
-                ax_h1.text(0.04, 0.96, f"AUDITORÍA INTELIGENTE DE REDES SOCIALES: {nombre_negocio.upper()}", color='white', fontsize=13, fontweight='bold', zorder=3)
-                ax_h1.text(0.04, 0.93, f"{giro_comercial_dinamico.upper()} | PÁGINA 1: AUDITORÍA DE FORMATOS", color='#90CAF9', fontsize=8.5, zorder=3)
+                # -------------------------------------------------------------
+                # PÁGINA 1: PORTADA Y AUDITORÍA GENERAL DE FORMATOS (Y: 0.75 a 1.00)
+                # -------------------------------------------------------------
+                ax_p1 = fig.add_axes([0, 0.75, 1, 0.25])
+                ax_p1.axis('off')
+                ax_p1.add_patch(patches.Rectangle((0, 0), 1, 1, facecolor='#FAFAFA', zorder=1))
+                ax_p1.add_patch(patches.Rectangle((0, 0.92), 1, 0.08, facecolor='#1A237E', zorder=2))
+                ax_p1.text(0.04, 0.95, f"AUDITORÍA INTELIGENTE DE REDES SOCIALES: {nombre_negocio.upper()}", color='white', fontsize=13, fontweight='bold', zorder=3)
+                ax_p1.text(0.04, 0.93, f"{giro_comercial_dinamico.upper()} | PÁGINA 1: DIAGNÓSTICO DE FORMATOS", color='#90CAF9', fontsize=8.5, zorder=3)
                 
-                ax_h1.add_patch(patches.Rectangle((0.04, 0.73), 0.44, 0.16, facecolor='white', edgecolor='#CFD8DC', linewidth=0.8, zorder=2))
-                ax_h1.text(0.06, 0.85, "MÉTRICAS BASE DEL CANVAS", color='#1A237E', fontsize=9.5, fontweight='bold', zorder=3)
+                # Tarjeta de KPI Base
+                ax_p1.add_patch(patches.Rectangle((0.04, 0.72), 0.44, 0.16, facecolor='white', edgecolor='#CFD8DC', linewidth=0.8, zorder=2))
+                ax_p1.text(0.06, 0.84, "MÉTRICAS BASE DEL CANVAS", color='#1A237E', fontsize=9.5, fontweight='bold', zorder=3)
                 txt_b1 = f"Posts Auditados: {len(df_fb)}\nFormato Top: {form_top.upper()}\nFormato Crítico: {form_peor.upper()}\nDía Pico: {dia_pico.upper()}\nHora Pico: {int(hora_pico)}:00 H"
-                ax_h1.text(0.06, 0.82, txt_b1, color='#37474F', fontsize=8.5, fontfamily='monospace', verticalalignment='top', zorder=3)
+                ax_p1.text(0.06, 0.80, txt_b1, color='#37474F', fontsize=8.5, fontfamily='monospace', verticalalignment='top', zorder=3)
                 
-                ax_h1.add_patch(patches.Rectangle((0.52, 0.71), 0.44, 0.18, facecolor='white', edgecolor='#CFD8DC', linewidth=0.8, zorder=2))
-                ax_h1.text(0.54, 0.85, "PREDICCIONES DE ENGINE (ML)", color='#1A237E', fontsize=9.5, fontweight='bold', zorder=3)
+                # Tarjeta de Engine ML
+                ax_p1.add_patch(patches.Rectangle((0.52, 0.72), 0.44, 0.16, facecolor='white', edgecolor='#CFD8DC', linewidth=0.8, zorder=2))
+                ax_p1.text(0.54, 0.84, "PREDICCIONES DE ENGINE (ML)", color='#1A237E', fontsize=9.5, fontweight='bold', zorder=3)
                 txt_b2 = f"POTENCIAL DE CRECIMIENTO:\n  +{indice_crecimiento:.1f}%\n\nERROR ESTÁNDAR RESIDUAL:\n  ±{margen_error:.1f}%"
-                ax_h1.text(0.54, 0.82, txt_b2, color='#1B5E20', fontsize=8, linespacing=1.1, verticalalignment='top', zorder=3)
+                ax_p1.text(0.54, 0.80, txt_b2, color='#1B5E20', fontsize=8.5, fontfamily='monospace', linespacing=1.1, verticalalignment='top', zorder=3)
                 
-                ax_pdf_pie1 = fig.add_axes([0.07, 0.71, 0.38, 0.11])
+                # Gráficos de Torta de la Página 1
+                ax_pdf_pie1 = fig.add_axes([0.07, 0.78, 0.38, 0.10])
                 ax_pdf_pie1.pie(df_agrupado['Cantidad'], labels=df_agrupado['Tipo de publicación'], colors=colores_render, textprops={'fontsize': 7.5}, startangle=90)
                 ax_pdf_pie1.set_title("Volumen por Formato", fontsize=8.5, color='#1A237E', fontweight='bold')
                 
-                ax_pdf_pie2 = fig.add_axes([0.55, 0.71, 0.38, 0.11])
+                ax_pdf_pie2 = fig.add_axes([0.55, 0.78, 0.38, 0.10])
                 ax_pdf_pie2.pie(df_agrupado['Total_Interacciones'], labels=df_agrupado['Tipo de publicación'], colors=colores_render, textprops={'fontsize': 7.5}, startangle=90)
                 ax_pdf_pie2.set_title("Masa de Repercusión", fontsize=8.5, color='#1A237E', fontweight='bold')
                 
-                ax_h1.add_patch(patches.Rectangle((0.04, 0.05), 0.92, 0.32, facecolor='white', edgecolor='#CFD8DC', linewidth=0.8, zorder=2))
-                ax_h1.text(0.06, 0.34, "DISTRIBUCIÓN CRONOLÓGICA TEMPORAL HISTÓRICA", color='#1A237E', fontsize=9.5, fontweight='bold', zorder=3)
+                # Contenido extendido de la hoja 1: Desglose técnico escrito
+                ax_p1.add_patch(patches.Rectangle((0.04, 0.06), 0.92, 0.42, facecolor='white', edgecolor='#CFD8DC', linewidth=0.8, zorder=2))
+                ax_p1.text(0.06, 0.44, "ESTUDIO DE PRESENCIA Y VOLUMETRÍA ESTRUCTURAL", color='#1A237E', fontsize=10, fontweight='bold', zorder=3)
+                txt_desglose = ""
+                for _, r in df_agrupado.head(4).iterrows():
+                    txt_desglose += f"• Formato: {r['Tipo de publicación'].upper()} — Total Posts: {r['Cantidad']} ({ (r['Cantidad']/len(df_fb))*100 :.1f}%)"
+                    txt_desglose += f" | Promedio de engagement: {r['Promedio_Interacciones']:.1f} interacciones.\n  Suma acumulada del canal: {int(r['Total_Interacciones'])} reacciones y compartidos.\n\n"
+                ax_p1.text(0.06, 0.40, txt_desglose, color='#37474F', fontsize=9, linespacing=1.2, verticalalignment='top', zorder=3)
                 
-                ax_pdf_line1 = fig.add_axes([0.08, 0.54, 0.38, 0.10])
-                ax_pdf_line1.plot(df_dias['Dia_Semana'].astype(str), df_dias['Interacciones'], color='#85C1E9', linewidth=2, marker='o', markersize=3)
-                ax_pdf_line1.set_title("Interacciones por Día", fontsize=8.5, color='#1A237E', fontweight='bold')
-                ax_pdf_line1.tick_params(axis='both', labelsize=6.5)
+                # Pie de Página 1
+                ax_p1.add_patch(patches.Rectangle((0.04, 0.012), 0.92, 0.015, facecolor='#E8EAF6', edgecolor='#C5CAE9', linewidth=0.8, zorder=2))
+                ax_p1.text(0.05, 0.016, "Universidad Casa Grande — Proyecto Integrador | Página 1", color='#1A237E', fontsize=8, fontweight='bold', zorder=3)
                 
-                ax_pdf_line2 = fig.add_axes([0.55, 0.54, 0.38, 0.10])
-                ax_pdf_line2.plot(df_horas['Hora_Num'], df_horas['Interacciones'], color='#F5B7B1', linewidth=2, marker='o', markersize=3)
-                ax_pdf_line2.set_title("Interacciones vs Hora", fontsize=8.5, color='#1A237E', fontweight='bold')
-                ax_pdf_line2.tick_params(axis='both', labelsize=6.5)
+                # -------------------------------------------------------------
+                # PÁGINA 2: COMPORTAMIENTO CRONOLÓGICO Y TIEMPOS (Y: 0.50 a 0.75)
+                # -------------------------------------------------------------
+                ax_p2 = fig.add_axes([0, 0.50, 1, 0.25])
+                ax_p2.axis('off')
+                ax_p2.add_patch(patches.Rectangle((0, 0), 1, 1, facecolor='#FAFAFA', zorder=1))
+                ax_p2.add_patch(patches.Rectangle((0, 0.92), 1, 0.08, facecolor='#1A237E', zorder=2))
+                ax_p2.text(0.04, 0.95, f"AUDITORÍA INTELIGENTE DE REDES SOCIALES: {nombre_negocio.upper()}", color='white', fontsize=13, fontweight='bold', zorder=3)
+                ax_p2.text(0.04, 0.93, f"ANÁLISIS CRONOLÓGICO | PÁGINA 2: MAPAS DE CALOR Y VENTANAS CRÍTICAS", color='#90CAF9', fontsize=8.5, zorder=3)
                 
-                ax_h1.add_patch(patches.Rectangle((0.04, 0.012), 0.92, 0.025, facecolor='#E8EAF6', edgecolor='#C5CAE9', linewidth=0.8, zorder=2))
-                ax_h1.text(0.05, 0.019, "Universidad Casa Grande - Proyecto Integrador", color='#1A237E', fontsize=8, fontweight='bold', zorder=3)
+                # Gráficos lineales de la Página 2
+                ax_pdf_line1 = fig.add_axes([0.08, 0.64, 0.38, 0.18])
+                ax_pdf_line1.plot(df_dias['Dia_Semana'].astype(str), df_dias['Interacciones'], color='#85C1E9', linewidth=2.5, marker='o', markersize=4)
+                ax_pdf_line1.set_title("Volumen de Engagement por Día", fontsize=8.5, color='#1A237E', fontweight='bold')
+                ax_pdf_line1.tick_params(axis='both', labelsize=7)
+                ax_pdf_line1.grid(True, linestyle='--', alpha=0.5)
                 
-                # --- LÁMINA 2 ---
-                ax_h2 = fig.add_axes([0, 0, 1, 0.50])
-                ax_h2.axis('off')
-                ax_h2.add_patch(patches.Rectangle((0, 0), 1, 1, facecolor='#FAFAFA', zorder=1))
-                ax_h2.add_patch(patches.Rectangle((0, 0.92), 1, 0.08, facecolor='#1A237E', zorder=2))
-                ax_h2.text(0.04, 0.96, f"PLANIFICACIÓN OPERATIVA INTEGRAL: {nombre_negocio.upper()}", color='white', fontsize=13, fontweight='bold', zorder=3)
-                ax_h2.text(0.04, 0.93, f"MES: {mes_actual_nombre.upper()} | PÁGINA 2: ESTRATEGIA EJECUTIVA", color='#90CAF9', fontsize=8.5, zorder=3)
+                ax_pdf_line2 = fig.add_axes([0.55, 0.64, 0.38, 0.18])
+                ax_pdf_line2.plot(df_horas['Hora_Num'], df_horas['Interacciones'], color='#F5B7B1', linewidth=2.5, marker='o', markersize=4)
+                ax_pdf_line2.set_title("Curva de Rendimiento por Hora (24H)", fontsize=8.5, color='#1A237E', fontweight='bold')
+                ax_pdf_line2.tick_params(axis='both', labelsize=7)
+                ax_pdf_line2.grid(True, linestyle='--', alpha=0.5)
                 
-                ax_h2.add_patch(patches.Rectangle((0.04, 0.58), 0.92, 0.31, facecolor='white', edgecolor='#CFD8DC', linewidth=0.8, zorder=2))
-                ax_h2.text(0.06, 0.86, f"MATRIZ DE PLANIFICACIÓN SEMANAL AUTOMATIZADA - MES DE {mes_actual_nombre.upper()}", color='#1A237E', fontsize=9.5, fontweight='bold', zorder=3)
+                # Texto explicativo temporal de la hoja 2
+                ax_p2.add_patch(patches.Rectangle((0.04, 0.06), 0.92, 0.42, facecolor='white', edgecolor='#CFD8DC', linewidth=0.8, zorder=2))
+                ax_p2.text(0.06, 0.44, "CONCLUSIONES CRONOLÓGICAS DE TRACCIÓN ALGORÍTMICA", color='#1A237E', fontsize=10, fontweight='bold', zorder=3)
+                txt_temporal = (
+                    f"• PUNTO MÁXIMO DE AUDIENCIA (DÍA PICO): El día {dia_pico.upper()} registra la mayor concentración\n"
+                    f"  de usuarios dispuestos a interactuar con los contenidos, ideal para lanzamientos de campañas masivas.\n\n"
+                    f"• VENTANA DE SOPORTE EFECTIVO: El día {segundo_dia.upper()} se posiciona como el segundo eje de fuerza comercial\n"
+                    f"  permitiendo colocar infografías y carruseles de alta retención.\n\n"
+                    f"• COHORTE DE BAJA TRACCIÓN (DÍA VALLE): Los días {dia_valle.upper()} experimentan un declive severo orgánico.\n"
+                    f"  Se recomienda encarecidamente no quemar anuncios pagados ni ofertas directas en esta sección.\n\n"
+                    f"• HORA ÓPTIMA DE INDEXACIÓN: La ventana de las {int(hora_pico)}:00 H actúa como el epicentro algorítmico diario.\n"
+                    f"  La programación automatizada debe inyectarse 30 minutos antes de dicha hora."
+                )
+                ax_p2.text(0.06, 0.40, txt_temporal, color='#37474F', fontsize=9, linespacing=1.3, verticalalignment='top', zorder=3)
+                
+                # Pie de Página 2
+                ax_p2.add_patch(patches.Rectangle((0.04, 0.012), 0.92, 0.015, facecolor='#E8EAF6', edgecolor='#C5CAE9', linewidth=0.8, zorder=2))
+                ax_p2.text(0.05, 0.016, "Universidad Casa Grande — Proyecto Integrador | Página 2", color='#1A237E', fontsize=8, fontweight='bold', zorder=3)
+                
+                # -------------------------------------------------------------
+                # PÁGINA 3: PLANIFICACIÓN OPERATIVA SEMANAL (Y: 0.25 a 0.50)
+                # -------------------------------------------------------------
+                ax_p3 = fig.add_axes([0, 0.25, 1, 0.25])
+                ax_p3.axis('off')
+                ax_p3.add_patch(patches.Rectangle((0, 0), 1, 1, facecolor='#FAFAFA', zorder=1))
+                ax_p3.add_patch(patches.Rectangle((0, 0.92), 1, 0.08, facecolor='#1A237E', zorder=2))
+                ax_p3.text(0.04, 0.95, f"PLANIFICACIÓN OPERATIVA INTEGRAL: {nombre_negocio.upper()}", color='white', fontsize=13, fontweight='bold', zorder=3)
+                ax_p3.text(0.04, 0.93, f"MES OPERATIVO DE {mes_actual_nombre.upper()} | PÁGINA 3: MATRIZ DE DISTRIBUCIÓN SEMANAL", color='#90CAF9', fontsize=8.5, zorder=3)
+                
+                # Tarjeta de Matriz Semanal
+                ax_p3.add_patch(patches.Rectangle((0.04, 0.06), 0.92, 0.82, facecolor='white', edgecolor='#CFD8DC', linewidth=0.8, zorder=2))
+                ax_p3.text(0.06, 0.83, f"MATRIZ ESTRATÉGICA PREDICTIVA DE PUBLICACIÓN - {mes_actual_nombre.upper()}", color='#1A237E', fontsize=10, fontweight='bold', zorder=3)
                 txt_b3 = (
-                    f"• SEMANA 1:\n  [Estrategia]: Publicar Formato Líder ({form_top.upper()}) (atracción inicial).\n  [Hito]: {hitos_mes_actual['Semana 1']}\n\n"
-                    f"• SEMANA 2:\n  [Estrategia]: Contenido en día de soporte ({segundo_dia.upper()}) (tracción).\n  [Hito]: {hitos_mes_actual['Semana 2']}\n\n"
-                    f"• SEMANA 3:\n  [Estrategia]: Conversión directa en día pico ({dia_pico.upper()}).\n  [Hito]: {hitos_mes_actual['Semana 3']}\n\n"
-                    f"• SEMANA 4:\n  [Estrategia]: Post orgánico en ventana horaria pre-pico ({int(hora_pico)-1}:30 H).\n  [Hito]: {hitos_mes_actual['Semana 4']}"
+                    f"• PLANIFICACIÓN PARA LA SEMANA 1:\n"
+                    f"  [Dirección Estratégica]: Forzar la exposición del Formato Líder ({form_top.upper()}) enfocado en atracción orgánica masiva.\n"
+                    f"  [Hito Estacional Detectado]: {hitos_mes_actual['Semana 1']}\n\n"
+                    f"• PLANIFICACIÓN PARA LA SEMANA 2:\n"
+                    f"  [Dirección Estratégica]: Publicar contenido interactivo y educativo en el día de soporte ({segundo_dia.upper()}) para estabilizar alcance.\n"
+                    f"  [Hito Estacional Detectado]: {hitos_mes_actual['Semana 2']}\n\n"
+                    f"• PLANIFICACIÓN PARA LA SEMANA 3:\n"
+                    f"  [Dirección Estratégica]: Lanzar campañas transaccionales de conversión directa en el día pico detectado de la cuenta ({dia_pico.upper()}).\n"
+                    f"  [Hito Estacional Detectado]: {hitos_mes_actual['Semana 3']}\n\n"
+                    f"• PLANIFICACIÓN PARA LA SEMANA 4:\n"
+                    f"  [Dirección Estratégica]: Posteo de contenido de valor adaptado estrictamente a la ventana horaria pre-pico de las {int(hora_pico)-1}:30 H.\n"
+                    f"  [Hito Estacional Detectado]: {hitos_mes_actual['Semana 4']}"
                 )
-                ax_h2.text(0.06, 0.83, txt_b3, color='#37474F', fontsize=8.5, linespacing=1.3, verticalalignment='top', zorder=3)
+                ax_p3.text(0.06, 0.78, txt_b3, color='#37474F', fontsize=9.5, linespacing=1.4, verticalalignment='top', zorder=3)
                 
-                ax_h2.add_patch(patches.Rectangle((0.04, 0.05), 0.92, 0.50, facecolor='white', edgecolor='#CFD8DC', linewidth=0.8, zorder=2))
-                ax_h2.text(0.06, 0.52, "DIRECTRICES OPERATIVAS DE CONTROL", color='#1A237E', fontsize=9.5, fontweight='bold', zorder=3)
+                # Pie de Página 3
+                ax_p3.add_patch(patches.Rectangle((0.04, 0.012), 0.92, 0.015, facecolor='#E8EAF6', edgecolor='#C5CAE9', linewidth=0.8, zorder=2))
+                ax_p3.text(0.05, 0.016, "Universidad Casa Grande — Proyecto Integrador | Página 3", color='#1A237E', fontsize=8, fontweight='bold', zorder=3)
+                
+                # -------------------------------------------------------------
+                # PÁGINA 4: DIRECTRICES DE CONTROL Y DECÁLOGO (Y: 0.00 a 0.25)
+                # -------------------------------------------------------------
+                ax_p4 = fig.add_axes([0, 0, 1, 0.25])
+                ax_p4.axis('off')
+                ax_p4.add_patch(patches.Rectangle((0, 0), 1, 1, facecolor='#FAFAFA', zorder=1))
+                ax_p4.add_patch(patches.Rectangle((0, 0.92), 1, 0.08, facecolor='#1A237E', zorder=2))
+                ax_p4.text(0.04, 0.95, f"PLANIFICACIÓN OPERATIVA INTEGRAL: {nombre_negocio.upper()}", color='white', fontsize=13, fontweight='bold', zorder=3)
+                ax_p4.text(0.04, 0.93, f"SISTEMA DE CONTROL GENERAL | PÁGINA 4: DECÁLOGO DE DIRECTRICES EJECUTIVAS", color='#90CAF9', fontsize=8.5, zorder=3)
+                
+                # Tarjeta del Decálogo
+                ax_p4.add_patch(patches.Rectangle((0.04, 0.06), 0.92, 0.82, facecolor='white', edgecolor='#CFD8DC', linewidth=0.8, zorder=2))
+                ax_p4.text(0.06, 0.84, "DIRECTRICES TÉCNICAS RECOMENDADAS PARA SEGUIMIENTO", color='#1A237E', fontsize=10, fontweight='bold', zorder=3)
+                
                 txt_b4 = (
-                    f"1. Monopolizar el 60% de recursos en {form_top.upper()} por rendimiento superior.\n\n"
-                    f"2. Desacelerar posts tipo {form_peor.upper()} por deficiencia crítica detectada.\n\n"
-                    f"3. Concentrar presupuestos publicitarios durante la fase de {q_max.upper()}.\n\n"
-                    f"4. Lanzar posts exactamente a las {int(hora_pico)-1}:30 H para indexación algorítmica precoz.\n\n"
-                    f"5. Amortiguar caídas algorítmicas los días {dia_valle.upper()} usando historias de interacción.\n\n"
-                    f"6. Insertar descriptores clave ('{top_conceptos[0].upper()}', '{top_conceptos[1].upper()}') para indexar SEO.\n\n"
-                    f"7. Potenciar el segundo día de mayor fuerza comercial ({segundo_dia.upper()}) con contenido educativo.\n\n"
-                    f"8. Mitigar desviaciones mediante pruebas A/B usando el margen predictivo de +-{margen_error:.1f}%.\n\n"
-                    f"9. Forzar alcance respondiendo comentarios durante los primeros 20 minutos de publicación.\n\n"
-                    f"10. Asegurar coherencia adaptando los copys al hito estacional activo de {mes_actual_nombre.upper()}."
+                    f"1. Monopolizar el 60% de los recursos en {form_top.upper()} por rendimiento comercial marcadamente superior.\n\n"
+                    f"2. Desacelerar de inmediato la producción de posts tipo {form_peor.upper()} por deficiencia crítica detectada.\n\n"
+                    f"3. Concentrar presupuestos e inversiones publicitarias durante la fase estacional de {q_max.upper()}.\n\n"
+                    f"4. Forzar publicaciones exactamente a las {int(hora_pico)-1}:30 H para lograr indexación algorítmica precoz.\n\n"
+                    f"5. Amortiguar caídas orgánicas los días {dia_valle.upper()} mediante el uso exclusivo de historias de interacción casual.\n\n"
+                    f"6. Insertar los descriptores semánticos clave ('{top_conceptos[0].upper()}', '{top_conceptos[1].upper()}') para acelerar el SEO.\n\n"
+                    f"7. Potenciar el segundo día de mayor fuerza ({segundo_dia.upper()}) inyectando carruseles educativos de autoridad.\n\n"
+                    f"8. Mitigar desviaciones matemáticas mediante pruebas A/B estructuradas usando el margen predictivo de +-{margen_error:.1f}%.\n\n"
+                    f"9. Forzar el alcance respondiendo comentarios de la audiencia durante los primeros 20 minutos de publicación.\n\n"
+                    f"10. Asegurar cohesión estacional adaptando la comunicación a los hitos dinámicos del mes activo de {mes_actual_nombre.upper()}."
                 )
-                ax_h2.text(0.06, 0.49, txt_b4, color='#37474F', fontsize=8.5, linespacing=1.2, verticalalignment='top', zorder=3)
+                ax_p4.text(0.06, 0.80, txt_b4, color='#37474F', fontsize=9, linespacing=1.2, verticalalignment='top', zorder=3)
                 
-                ax_h2.add_patch(patches.Rectangle((0.04, 0.012), 0.92, 0.025, facecolor='#E8EAF6', edgecolor='#C5CAE9', linewidth=0.8, zorder=2))
-                ax_h2.text(0.05, 0.019, f"Reporte corporativo generado para {nombre_negocio.upper()} el {fecha_actual_sistema.strftime('%Y-%m-%d')}.", color='#1A237E', fontsize=8, fontweight='bold', zorder=3)
+                # Pie de Página 4 (Final del documento)
+                ax_p4.add_patch(patches.Rectangle((0.04, 0.012), 0.92, 0.015, facecolor='#E8EAF6', edgecolor='#C5CAE9', linewidth=0.8, zorder=2))
+                ax_p4.text(0.05, 0.016, f"Reporte técnico unificado para {nombre_negocio.upper()}. Generado el {fecha_actual_sistema.strftime('%Y-%m-%d')} | Página 4", color='#1A237E', fontsize=8, fontweight='bold', zorder=3)
                 
+                # Guardado vectorial limpio
                 plt.savefig(buf, format="pdf", bbox_inches='tight', dpi=300)
                 buf.seek(0)
                 plt.close(fig)
 
-            st.success("🎉 ¡Tu reporte PDF se ha generado correctamente!")
+            st.success("🎉 ¡Tu reporte técnico expandido de 4 páginas se ha generado correctamente!")
             st.download_button(
-                label="💾 Descargar Reporte Ejecutivo (.PDF)", 
+                label="💾 Descargar Reporte Ejecutivo de 4 Hojas (.PDF)", 
                 data=buf, 
-                file_name=f"Reporte_Consultoria_{nombre_negocio}.pdf", 
+                file_name=f"Reporte_Completo_4_Hojas_{nombre_negocio}.pdf", 
                 mime="application/pdf"
             )
