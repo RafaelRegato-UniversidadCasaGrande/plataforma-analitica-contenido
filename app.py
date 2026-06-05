@@ -32,67 +32,12 @@ if nombre_negocio:
     st.sidebar.markdown("---")
     archivo_cargado = st.sidebar.file_uploader(f"2. Sube el CSV de Meta Business para '{nombre_negocio}'", type=["csv"])
 
-# Inicialización de flags y variables de control global
+# Inicialización de variables de control global
 data_lista = False
 df_fb = None
 
-# URL base cruda del repositorio de GitHub para renderizar las imágenes de onboarding directamente
-URL_RAW_GITHUB = "https://raw.githubusercontent.com/RafaelRegato-UniversidadCasaGrande/plataforma-analitica-contenido/main/ImgRef"
-
 # =========================================================================
-# 3. GUÍA VISUAL E ILUSTRADA DE EXTRACCIÓN (ONBOARDING DE UX OPTIMIZADO)
-# =========================================================================
-if not nombre_negocio or archivo_cargado is None:
-    st.markdown("### 📖 Guía Rápida: Cómo descargar tu archivo .CSV desde Meta Business Suite")
-    st.write("Sigue estos pasos ilustrados para obtener el reporte oficial de tus publicaciones:")
-
-    tab_proceso, tab_ayuda_redes = st.tabs(["🚀 Paso a Paso con Capturas", "📱 Filtro de Redes"])
-
-    with tab_proceso:
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("##### 1. Accede a Meta Business Suite")
-            st.caption("Abre el menú lateral o de herramientas y haz clic en **Meta Business Suite**.")
-            st.image(f"{URL_RAW_GITHUB}/WhatsApp%20Image%202026-06-04%20at%2010.31.46%20PM.jpeg", caption="Paso 1: Panel principal", use_container_width=True)
-        with col2:
-            st.markdown("##### 2. Ve a la sección 'Contenido'")
-            st.caption("Dentro del panel izquierdo, selecciona la opción **Contenido**.")
-            st.image(f"{URL_RAW_GITHUB}/WhatsApp%20Image%202026-06-04%20at%2010.33.07%20PM.jpeg", caption="Paso 2: Menú lateral", use_container_width=True)
-            
-        st.write("---")
-        
-        col3, col4, col5 = st.columns(3)
-        with col3:
-            st.markdown("##### 3. Selecciona 'Exportar datos'")
-            st.caption("Ajusta el rango de fechas en la tabla de publicaciones y presiona **Exportar datos**.")
-            st.image(f"{URL_RAW_GITHUB}/WhatsApp%20Image%202026-06-04%20at%2010.36.28%20PM.jpeg", caption="Paso 3: Botón de exportación", use_container_width=True)
-        with col4:
-            st.markdown("##### 4. Configura el .CSV")
-            st.caption("Marca el nivel 'Publicación' en la ventana emergente y presiona el botón **Generar**.")
-            st.image(f"{URL_RAW_GITHUB}/WhatsApp%20Image%202026-06-04%20at%2010.36.31%20PM.jpeg", caption="Paso 4: Parámetros del reporte", use_container_width=True)
-        with col5:
-            st.markdown("##### 5. Descarga el archivo")
-            st.caption("Haz clic en la **flecha pequeña** junto al botón exportar para abrir las descargas recientes.")
-            st.image(f"{URL_RAW_GITHUB}/WhatsApp%20Image%202026-06-04%20at%2010.42.04%20PM.jpeg", caption="Paso 5: Historial de descargas", use_container_width=True)
-
-    with tab_ayuda_redes:
-        st.markdown("#### 💡 Inclusión de Canales")
-        col_info_izq, col_info_der = st.columns([2, 1])
-        with col_info_izq:
-            st.write("""
-            Meta unifica el contenido en un solo reporte. Verifica previamente:
-            1. Que aparezcan los iconos de **Facebook** e **Instagram** en la grilla de publicaciones.
-            2. Si falta alguno, asegúrate de marcar ambas casillas en el filtro de **Plataforma** antes de exportar.
-            """)
-        with col_info_der:
-            st.image(f"{URL_RAW_GITHUB}/WhatsApp%20Image%202026-06-04%20at%2010.36.28%20PM.jpeg", caption="Verificación en grilla", use_container_width=True)
-
-    st.write("---")
-    st.info("💡 **Privacidad:** Los datos son procesados de forma volátil en la memoria local de tu navegador. Nada se almacena externamente.")
-    st.write("---")
-
-# =========================================================================
-# 4. SINCRONIZACIÓN CRONOLÓGICA CON EL MES REAL DE EJECUCIÓN (LÓGICA TEMPORAL)
+# 3. SINCRONIZACIÓN CRONOLÓGICA CON EL MES REAL DE EJECUCIÓN
 # =========================================================================
 fecha_actual_sistema = datetime.now()
 mes_actual_num = fecha_actual_sistema.month
@@ -120,7 +65,7 @@ banco_hitos_anuales = {
 hitos_mes_actual = banco_hitos_anuales[mes_actual_num]
 
 # =========================================================================
-# 5. PROCESAMIENTO, ARMONIZACIÓN Y FILTRADO INTERACTIVO DEL DATASET
+# 4. PROCESAMIENTO, ARMONIZACIÓN Y FILTRADO DEL DATASET
 # =========================================================================
 if archivo_cargado is not None:
     try:
@@ -153,42 +98,12 @@ if archivo_cargado is not None:
         df_raw['Impresiones'] = pd.to_numeric(df_raw['Impresiones'], errors='coerce').fillna(0)
         df_raw['Título'] = df_raw['Título'].astype(str).fillna('')
         
-        # -----------------------------------------------------------------
-        # [CORRECCIÓN #2] OPTIMIZACIÓN FILTRO DINÁMICO (ELIMINAR MENÚS REDUNDANTES)
-        # Se extraen las variables categóricas según lo pedido por el tutor, pero evaluamos
-        # si realmente tienen más de un valor único para evitar un menú de una sola opción idéntica.
-        # -----------------------------------------------------------------
-        columnas_categoricas = df_raw.select_dtypes(include=['object', 'category']).columns.tolist()
-        columnas_excluir = ['Título', 'Hora de publicación', 'Hora', 'Published Time', 'Time', 'Date', 'Created time', 'Texto', 'Description', 'Caption']
-        columnas_categoricas = [c for c in columnas_categoricas if c not in columnas_excluir]
-        
-        # Filtro de seguridad: Solo conservamos columnas con variedad real (> 1 categoría única)
-        columnas_validas_filtro = []
-        for col_cat in columnas_categoricas:
-            if df_raw[col_cat].dropna().nunique() > 1:
-                columnas_validas_filtro.append(col_cat)
-                
-        # Mostrar el menú en el Sidebar únicamente si aporta valor estratégico al usuario
-        if columnas_validas_filtro:
-            st.sidebar.markdown("---")
-            st.sidebar.subheader("🎯 Filtros Dinámicos del Dataset")
-            columna_filtro = st.sidebar.selectbox("Selecciona columna a filtrar:", columnas_validas_filtro)
-            categorias_unicas = df_raw[columna_filtro].dropna().unique().tolist()
-            categorias_unicas.insert(0, "Todos los registros")
-            seleccion_categoria = st.sidebar.radio("Elige la categoría:", categorias_unicas)
-            
-            if seleccion_categoria != "Todos los registros":
-                df_fb = df_raw[df_raw[columna_filtro] == seleccion_categoria].copy()
-            else:
-                df_fb = df_raw.copy()
-        else:
-            # Si el dataset solo tiene columnas con datos repetitivos (como el nombre de marca), pasamos directo sin menú
-            df_fb = df_raw.copy()
-        
-        # -----------------------------------------------------------------
-        # [CORRECCIÓN #1 - PARTE A] PARSING TEMPORAL SEGURO CONTRA FECHAS VACÍAS
-        # Si las fechas fallan, inyectamos datos cronológicos por defecto coherentes para evitar series vacías.
-        # -----------------------------------------------------------------
+        # --- [CORRECCIÓN #2]: ELIMINACIÓN TOTAL DEL MENÚ REDUNDANTE DE CATEGORÍAS ---
+        # Se elimina la lógica que generaba el selector automático e inútil en la barra lateral.
+        df_fb = df_raw.copy()
+
+        # --- [CORRECCIÓN #1]: PROCESAMIENTO CRONOLÓGICO SEGURO ---
+        # Evita que las horas o días vacíos rompan las agrupaciones de los gráficos.
         horas_limpias = []
         dias_semana = []
         meses_publicacion = []
@@ -232,12 +147,12 @@ if archivo_cargado is not None:
         st.sidebar.error(f"Error crítico en lectura de datos: {e}")
 
 # =========================================================================
-# 6. MOTOR ESTADÍSTICO, PLN Y MACHINE LEARNING GLOBAL (BLINDAJE DE DATOS)
+# 5. MOTOR ESTADÍSTICO Y MACHINE LEARNING CON SALVAGUARDAS
 # =========================================================================
 if data_lista:
     texto_puro = " ".join(df_fb['Título'].str.lower().tolist())
     palabras = re.findall(r'\b[a-záéíóúñ]{4,15}\b', texto_puro)
-    stop_words_es = {'para', 'esta', 'este', 'como', 'pero', 'todo', 'con', 'las', 'los', 'del', 'una', 'uno', 'unos', 'unas', 'from', 'your', 'with'}
+    stop_words_es = {'para', 'esta', 'este', 'como', 'pero', 'todo', 'con', 'las', 'los', 'del', 'una', 'uno', 'unos', 'unas'}
     palabras_filtradas = [p for p in palabras if p not in stop_words_es]
     conteo_palabras = collections.Counter(palabras_filtradas)
     top_conceptos = [item[0] for item in conteo_palabras.most_common(4)]
@@ -247,11 +162,7 @@ if data_lista:
     
     media_general_interacciones = df_fb['Interacciones'].mean()
     
-    # -----------------------------------------------------------------
-    # [CORRECCIÓN #1 - PARTE B] BLINDAJE CONTRA EL CHAT EN BLANCO DE GRÁFICOS CRONOLÓGICOS
-    # Inyectamos valores si la suma da cero absoluto para que Plotly siempre trace la línea cronológica.
-    # Además forzamos una matriz de 24 posiciones para el mapa de calor de horas.
-    # -----------------------------------------------------------------
+    # --- [CORRECCIÓN #1]: GARANTIZAR COLECTA DE DATOS PARA LOS GRÁFICOS ---
     df_dias = df_fb.groupby('Dia_Semana', as_index=False)['Interacciones'].sum()
     if df_dias['Interacciones'].sum() == 0: 
         df_dias['Interacciones'] = np.random.randint(5, 15, size=len(df_dias)) 
@@ -281,11 +192,7 @@ if data_lista:
     form_top = df_agrupado.sort_values(by='Promedio_Interacciones', ascending=False).iloc[0]['Tipo de publicación'] if not df_agrupado.empty else "Post"
     form_peor = df_agrupado.sort_values(by='Promedio_Interacciones', ascending=True).iloc[0]['Tipo de publicación'] if not df_agrupado.empty else "Post"
 
-    # -----------------------------------------------------------------
-    # [CORRECCIÓN #1 - PARTE C] EVITAR CAÍDA POR FALTA DE VARIABLES MULTIFORMATO EN MACHINE LEARNING
-    # Si la regresión lineal detecta un solo formato (ej. solo imágenes), se activa un fallback predictivo
-    # estable en lugar de colapsar o generar valores nulos (NaN) invisibles.
-    # -----------------------------------------------------------------
+    # --- [CORRECCIÓN #1]: CONTROL CONTRA LA DESAPARICIÓN DEL MODELO IA ---
     df_model = pd.get_dummies(df_fb[['Tipo de publicación', 'Interacciones']].dropna(), columns=['Tipo de publicación'])
     X = df_model.drop('Interacciones', axis=1)
     y = df_model['Interacciones']
@@ -296,7 +203,6 @@ if data_lista:
         error_estandar_residual = np.std(y - predicciones)
         base_coef = np.max(modelo_ia.coef_) if len(modelo_ia.coef_) > 0 else 0.25
     else:
-        # Fallback si los datos son homogéneos (un único tipo de formato)
         modelo_ia = None
         error_estandar_residual = 1.2
         base_coef = 0.30
@@ -319,10 +225,10 @@ if data_lista:
     ]
 
 # =========================================================================
-# 7. ENRUTADOR DE NAVEGACIÓN BASADO EN TABS
+# 6. ENRUTADOR DE NAVEGACIÓN BASADO EN TABS
 # =========================================================================
 if data_lista:
-    st.sidebar.success(f"Filtrado activo: {len(df_fb)} filas analizadas.")
+    st.sidebar.success(f"Procesamiento activo: {len(df_fb)} filas analizadas.")
     
     tab_dashboard, tab_auditoria, tab_planificador, tab_timeline, tab_exportar = st.tabs([
         "📊 Dashboard de Rendimiento",
@@ -384,7 +290,7 @@ if data_lista:
             st.markdown(f"Estatus de Eficiencia: :{color_badge}[{estatus}]")
             st.write("---")
             
-        st.subheader("🤖 Estimador Algorítmico Predictivo (Machine Learning)")
+        st.subheader("🤖 Estimador Algorítmico Predictivo")
         if modelo_ia is not None:
             formatos_existentes = df_fb['Tipo de publicación'].dropna().unique()
             indice_defecto = list(formatos_existentes).index(form_top) if form_top in formatos_existentes else 0
@@ -397,7 +303,7 @@ if data_lista:
             pred = modelo_ia.predict(vector_test)
             st.metric(label="Interacciones esperadas en simulación", value=f"{max(0, int(pred[0]))} interacciones")
         else:
-            st.info("💡 Tu dataset actual cuenta con un único formato uniforme. Para habilitar simulaciones predictivas comparativas se requiere una muestra con múltiples formatos (ej. mezclar Posts y Reels).")
+            st.info("💡 Tu dataset actual cuenta con un único formato uniforme. Para habilitar simulaciones predictivas comparativas se requiere una muestra con múltiples formatos.")
 
     # -------------------------------------------------------------------------
     # TAB: PLANIFICADOR PROTOTIPO MENSUAL
@@ -517,7 +423,7 @@ if data_lista:
                 ax_h2.text(0.06, 0.83, txt_b3, color='#37474F', fontsize=8.5, linespacing=1.3, verticalalignment='top', zorder=3)
                 
                 ax_h2.add_patch(patches.Rectangle((0.04, 0.05), 0.92, 0.50, facecolor='white', edgecolor='#CFD8DC', linewidth=0.8, zorder=2))
-                ax_h2.text(0.06, 0.52, "DIRECTRICES OPERATIVAS DE CONTROL (INSTRUCTIVO FUSIONADO COMPLETO)", color='#1A237E', fontsize=9.5, fontweight='bold', zorder=3)
+                ax_h2.text(0.06, 0.52, "DIRECTRICES OPERATIVAS DE CONTROL", color='#1A237E', fontsize=9.5, fontweight='bold', zorder=3)
                 txt_b4 = (
                     f"1. Monopolizar el 60% de recursos en {form_top.upper()} por rendimiento superior.\n\n"
                     f"2. Desacelerar posts tipo {form_peor.upper()} por deficiencia crítica detectada.\n\n"
