@@ -37,7 +37,6 @@ df_fb = None
 
 # Base URL fija de GitHub con codificación de espacios (%20) para evitar enlaces rotos en producción
 URL_BASE_REPOSITORIO = "https://raw.githubusercontent.com/rafaelregato/plataforma-analitica-contenido/main/ImgRef"
-
 # =========================================================================
 # 3. GUÍA VISUAL E ILUSTRADA DE EXTRACCIÓN (ONBOARDING DE UX OPTIMIZADO)
 # =========================================================================
@@ -52,11 +51,11 @@ if not nombre_negocio or archivo_cargado is None:
         with col1:
             st.markdown("##### 1. Accede a Meta Business Suite")
             st.caption("Abre el menú lateral o de herramientas y haz clic en **Meta Business Suite**.")
-            st.image(f"{URL_BASE_REPOSITORIO}/WhatsApp%20Image%202026-06-04%20at%2010.31.46%20PM.jpeg", caption="Paso 1: Panel principal", use_container_width=True)
+            st.image("https://raw.githubusercontent.com/rafaelregato/plataforma-analitica-contenido/main/ImgRef/image_c583dd.jpg", caption="Paso 1: Panel principal", use_container_width=True)
         with col2:
             st.markdown("##### 2. Ve a la sección 'Contenido'")
             st.caption("Dentro del panel izquierdo, selecciona la opción **Contenido**.")
-            st.image(f"{URL_BASE_REPOSITORIO}/WhatsApp%20Image%202026-06-04%20at%2010.33.07%20PM.jpeg", caption="Paso 2: Menú lateral", use_container_width=True)
+            st.image("https://raw.githubusercontent.com/rafaelregato/plataforma-analitica-contenido/main/ImgRef/image_c5845f.jpg", caption="Paso 2: Menú lateral", use_container_width=True)
             
         st.write("---")
         
@@ -64,15 +63,15 @@ if not nombre_negocio or archivo_cargado is None:
         with col3:
             st.markdown("##### 3. Selecciona 'Exportar datos'")
             st.caption("Ajusta el rango de fechas en la tabla de publicaciones y presiona **Exportar datos**.")
-            st.image(f"{URL_BASE_REPOSITORIO}/WhatsApp%20Image%202026-06-04%20at%2010.36.28%20PM.jpeg", caption="Paso 3: Botón de exportación", use_container_width=True)
+            st.image("https://raw.githubusercontent.com/rafaelregato/plataforma-analitica-contenido/main/ImgRef/image_c5847b.jpg", caption="Paso 3: Botón de exportación", use_container_width=True)
         with col4:
             st.markdown("##### 4. Configura el .CSV")
             st.caption("Marca el nivel 'Publicación' en la ventana emergente y presiona el botón **Generar**.")
-            st.image(f"{URL_BASE_REPOSITORIO}/WhatsApp%20Image%202026-06-04%20at%2010.36.31%20PM.jpeg", caption="Paso 4: Parámetros del reporte", use_container_width=True)
+            st.image("https://raw.githubusercontent.com/rafaelregato/plataforma-analitica-contenido/main/ImgRef/image_c58498.jpg", caption="Paso 4: Parámetros del reporte", use_container_width=True)
         with col5:
             st.markdown("##### 5. Descarga el archivo")
             st.caption("Haz clic en la **flecha pequeña** junto al botón exportar para abrir las descargas recientes.")
-            st.image(f"{URL_BASE_REPOSITORIO}/WhatsApp%20Image%202026-06-04%20at%2010.42.04%20PM.jpeg", caption="Paso 5: Historial de descargas", use_container_width=True)
+            st.image("https://raw.githubusercontent.com/rafaelregato/plataforma-analitica-contenido/main/ImgRef/image_c584b6.jpg", caption="Paso 5: Historial de descargas", use_container_width=True)
 
     with tab_ayuda_redes:
         st.markdown("#### 💡 Inclusión de Canales")
@@ -84,12 +83,11 @@ if not nombre_negocio or archivo_cargado is None:
             2. Si falta alguno, asegúrate de marcar ambas casillas en el filtro de **Plataforma** antes de exportar.
             """)
         with col_info_der:
-            st.image(f"{URL_BASE_REPOSITORIO}/WhatsApp%20Image%202026-06-04%20at%2010.36.28%20PM.jpeg", caption="Verificación en grilla", use_container_width=True)
+            st.image("https://raw.githubusercontent.com/rafaelregato/plataforma-analitica-contenido/main/ImgRef/image_c5847b.jpg", caption="Verificación en grilla", use_container_width=True)
 
     st.write("---")
     st.info("💡 **Privacidad:** Los datos son procesados de forma volátil en la memoria local de tu navegador. Nada se almacena externamente.")
     st.write("---")
-
 # =========================================================================
 # 4. SINCRONIZACIÓN CRONOLÓGICA CON EL MES REAL DE EJECUCIÓN (LÓGICA TEMPORAL)
 # =========================================================================
