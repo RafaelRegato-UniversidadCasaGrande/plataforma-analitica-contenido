@@ -126,15 +126,19 @@ if archivo_cargado is not None:
     try:
         df_raw = pd.read_csv(archivo_cargado, encoding='utf-8')
         
-        # Mapeo estratégico de consistencia semántica de columnas de Meta
+        # Eliminar espacios fantasmas en los nombres de las columnas para evitar fallos de coincidencia string
+        df_raw.columns = df_raw.columns.str.strip()
+        
+        # Diccionario maestro de mapeo semántico extendido para absorber cualquier idioma o formato de exportación de Meta
         dicc_sinonimos = {
-            'Tipo de publicación': ['Tipo de publicación', 'Tipo', 'Format', 'Post type'],
-            'Hora de publicación': ['Hora de publicación', 'Hora', 'Published Time', 'Time'],
-            'Interacciones': ['Interacciones', 'Interactions', 'Engagements', 'Interacciones con la publicación'],
-            'Impresiones': ['Impresiones', 'Alcance', 'Impresiones ', 'Impressions', 'Alcance de la publicación'],
-            'Título': ['Título', 'Texto', 'Title', 'Descripción', 'Post text', 'Texto de la publicación']
+            'Tipo de publicación': ['Tipo de publicación', 'Tipo', 'Format', 'Post type', 'Type', 'Formato de publicación', 'Formato'],
+            'Hora de publicación': ['Hora de publicación', 'Hora', 'Published Time', 'Time', 'Date', 'Fecha de publicación', 'Fecha', 'Created time'],
+            'Interacciones': ['Interacciones', 'Interactions', 'Engagements', 'Interacciones con la publicación', 'Engagement rate', 'Interacciones totales'],
+            'Impresiones': ['Impresiones', 'Alcance', 'Impresiones ', 'Impressions', 'Alcance de la publicación', 'Reach'],
+            'Título': ['Título', 'Texto', 'Title', 'Descripción', 'Post text', 'Texto de la publicación', 'Description', 'Caption', 'Contenido']
         }
         
+        # Ejecutar la homologación vectorial
         for col_estandar, lista_alternativas in dicc_sinonimos.items():
             for alt in lista_alternativas:
                 if alt in df_raw.columns and col_estandar not in df_raw.columns:
@@ -142,91 +146,99 @@ if archivo_cargado is not None:
         
         columnas_requeridas = ['Tipo de publicación', 'Hora de publicación', 'Interacciones', 'Impresiones', 'Título']
         
-        if all(col in df_raw.columns for col in columnas_requeridas):
-            # Limpieza y parsing vectorial base
-            df_raw['Interacciones'] = pd.to_numeric(df_raw['Interacciones'], errors='coerce').fillna(0)
-            df_raw['Impresiones'] = pd.to_numeric(df_raw['Impresiones'], errors='coerce').fillna(0)
-            df_raw['Título'] = df_raw['Título'].astype(str).fillna('')
-            
-            # --- IMPLEMENTACIÓN RECOMENDACIÓN DEL PROFESOR: FILTROS DINÁMICOS ---
-            st.sidebar.markdown("---")
-            st.sidebar.subheader("🎯 Filtros Dinámicos de Dataset")
-            
-            # Extracción estructurada de columnas categóricas / objeto usando la función recomendada
-            columnas_categoricas = df_raw.select_dtypes(include=['object', 'category']).columns.tolist()
-            
-            # Evitar filtrar por el texto largo completo ('Título') para mantener usabilidad limpia
-            if 'Título' in columnas_categoricas:
-                columnas_categoricas.remove('Título')
-            if 'Hora de publicación' in columnas_categoricas:
-                columnas_categoricas.remove('Hora de publicación')
-                
-            if columnas_categoricas:
-                columna_filtro = st.sidebar.selectbox("Selecciona columna a filtrar:", columnas_categoricas)
-                
-                # Obtención de categorías únicas de la serie elegida (.unique())
-                categorias_unicas = df_raw[columna_filtro].dropna().unique().tolist()
-                categorias_unicas.insert(0, "Todos los registros")
-                
-                seleccion_categoria = st.sidebar.radio("Elige la categoría:", categorias_unicas)
-                
-                # Aplicación reactiva del slice sobre el dataframe
-                if seleccion_categoria != "Todos los registros":
-                    df_fb = df_raw[df_raw[columna_filtro] == seleccion_categoria].copy()
+        # Comprobación de contingencia: si falta alguna columna, la creamos vacía para no romper el programa
+        for col in columnas_requeridas:
+            if col not in df_raw.columns:
+                if col in ['Interacciones', 'Impresiones']:
+                    df_raw[col] = 0
+                elif col == 'Tipo de publicación':
+                    df_raw[col] = 'Post'
+                elif col == 'Hora de publicación':
+                    df_raw[col] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 else:
-                    df_fb = df_raw.copy()
+                    df_raw[col] = ''
+
+        # Limpieza y parsing vectorial base seguro
+        df_raw['Interacciones'] = pd.to_numeric(df_raw['Interacciones'], errors='coerce').fillna(0)
+        df_raw['Impresiones'] = pd.to_numeric(df_raw['Impresiones'], errors='coerce').fillna(0)
+        df_raw['Título'] = df_raw['Título'].astype(str).fillna('')
+        
+        # --- IMPLEMENTACIÓN RECOMENDACIÓN DEL PROFESOR: FILTROS DINÁMICOS ---
+        st.sidebar.markdown("---")
+        st.sidebar.subheader("🎯 Filtros Dinámicos de Dataset")
+        
+        # Extracción estructurada de columnas categóricas / objeto usando la función recomendada por el profesor
+        columnas_categoricas = df_raw.select_dtypes(include=['object', 'category']).columns.tolist()
+        
+        # Limpieza de la lista para mantener filtros útiles y limpios
+        columnas_excluir = ['Título', 'Hora de publicación', 'Hora', 'Published Time', 'Time', 'Date', 'Fecha de publicación', 'Fecha', 'Created time', 'Texto', 'Description', 'Caption']
+        columnas_categoricas = [c for c in columnas_categoricas if c not in columnas_excluir]
+            
+        if columnas_categoricas:
+            columna_filtro = st.sidebar.selectbox("Selecciona columna a filtrar:", columnas_categoricas)
+            
+            # Obtención de categorías únicas de la serie elegida (.unique())
+            categorias_unicas = df_raw[columna_filtro].dropna().unique().tolist()
+            categorias_unicas.insert(0, "Todos los registros")
+            
+            seleccion_categoria = st.sidebar.radio("Elige la categoría:", categorias_unicas)
+            
+            # Aplicación reactiva del slice sobre el dataframe
+            if seleccion_categoria != "Todos los registros":
+                df_fb = df_raw[df_raw[columna_filtro] == seleccion_categoria].copy()
             else:
                 df_fb = df_raw.copy()
-            # -----------------------------------------------------------------
-            
-            if len(df_fb) == 0:
-                st.warning("⚠️ El filtro seleccionado no contiene registros. Mostrando dataset completo.")
-                df_fb = df_raw.copy()
+        else:
+            df_fb = df_raw.copy()
+        # -----------------------------------------------------------------
+        
+        if len(df_fb) == 0:
+            st.warning("⚠️ El filtro seleccionado no contiene registros. Mostrando dataset completo.")
+            df_fb = df_raw.copy()
 
-            # Extracción e ingeniería de variables temporales sobre el DF filtrado
-            horas_limpias = []
-            dias_semana = []
-            meses_publicacion = []
-            dias_espanol = {0: 'Lunes', 1: 'Martes', 2: 'Miércoles', 3: 'Jueves', 4: 'Viernes', 5: 'Sábado', 6: 'Domingo'}
-            
-            for h in df_fb['Hora de publicación'].astype(str):
-                try:
-                    fecha_p = pd.to_datetime(h, errors='coerce')
-                    if not pd.isnull(fecha_p):
-                        horas_limpias.append(fecha_p.hour)
-                        dias_semana.append(dias_espanol[fecha_p.dayofweek])
-                        meses_publicacion.append(fecha_p.month)
-                    else:
-                        partes = h.split()
-                        hora_entera = int(partes[1].split(':')[0])
-                        horas_limpias.append(hora_entera)
-                        dias_semana.append('Lunes')
-                        meses_publicacion.append(mes_actual_num)
-                except:
-                    horas_limpias.append(12)
+        # Extracción e ingeniería de variables temporales robustas sobre el DF filtrado
+        horas_limpias = []
+        dias_semana = []
+        meses_publicacion = []
+        dias_espanol = {0: 'Lunes', 1: 'Martes', 2: 'Miércoles', 3: 'Jueves', 4: 'Viernes', 5: 'Sábado', 6: 'Domingo'}
+        
+        for h in df_fb['Hora de publicación'].astype(str):
+            try:
+                fecha_p = pd.to_datetime(h, errors='coerce')
+                if not pd.isnull(fecha_p):
+                    horas_limpias.append(fecha_p.hour)
+                    dias_semana.append(dias_espanol[fecha_p.dayofweek])
+                    meses_publicacion.append(fecha_p.month)
+                else:
+                    partes = h.split()
+                    hora_entera = int(partes[1].split(':')[0])
+                    horas_limpias.append(hora_entera)
                     dias_semana.append('Lunes')
                     meses_publicacion.append(mes_actual_num)
-                    
-            df_fb['Hora_Num'] = horas_limpias
-            df_fb['Dia_Semana'] = dias_semana
-            df_fb['Mes_Num'] = meses_publicacion
-            
-            condiciones_q = [
-                df_fb['Mes_Num'].isin([1, 2, 3]),
-                df_fb['Mes_Num'].isin([4, 5, 6]),
-                df_fb['Mes_Num'].isin([7, 8, 9]),
-                df_fb['Mes_Num'].isin([10, 11, 12])
-            ]
-            valores_q = ['Trimestre Q1 (Ene-Mar)', 'Trimestre Q2 (Abr-Jun)', 'Trimestre Q3 (Jul-Sep)', 'Trimestre Q4 (Oct-Dic)']
-            df_fb['Trimestre'] = np.select(condiciones_q, valores_q, default='Trimestre Q1 (Ene-Mar)')
-            
-            orden_dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
-            df_fb['Dia_Semana'] = pd.Categorical(df_fb['Dia_Semana'], categories=orden_dias, ordered=True)
-            
-            st.sidebar.success(f"Filtrado activo: {len(df_fb)} filas analizadas.")
-            data_lista = True
-        else:
-            st.sidebar.error("El archivo CSV no cuenta con las columnas estructurales base de Meta Business Suite.")
+            except:
+                horas_limpias.append(12)
+                dias_semana.append('Lunes')
+                meses_publicacion.append(mes_actual_num)
+                
+        df_fb['Hora_Num'] = horas_limpias
+        df_fb['Dia_Semana'] = dias_semana
+        df_fb['Mes_Num'] = meses_publicacion
+        
+        condiciones_q = [
+            df_fb['Mes_Num'].isin([1, 2, 3]),
+            df_fb['Mes_Num'].isin([4, 5, 6]),
+            df_fb['Mes_Num'].isin([7, 8, 9]),
+            df_fb['Mes_Num'].isin([10, 11, 12])
+        ]
+        valores_q = ['Trimestre Q1 (Ene-Mar)', 'Trimestre Q2 (Abr-Jun)', 'Trimestre Q3 (Jul-Sep)', 'Trimestre Q4 (Oct-Dic)']
+        df_fb['Trimestre'] = np.select(condiciones_q, valores_q, default='Trimestre Q1 (Ene-Mar)')
+        
+        orden_dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+        df_fb['Dia_Semana'] = pd.Categorical(df_fb['Dia_Semana'], categories=orden_dias, ordered=True)
+        
+        st.sidebar.success(f"Filtrado activo: {len(df_fb)} filas analizadas.")
+        data_lista = True
+        
     except Exception as e:
         st.sidebar.error(f"Error crítico en lectura de datos: {e}")
 
@@ -237,7 +249,7 @@ if data_lista:
     # 6.1 Procesamiento de Lenguaje Natural Semántico (NLP)
     texto_puro = " ".join(df_fb['Título'].str.lower().tolist())
     palabras = re.findall(r'\b[a-záéíóúñ]{4,15}\b', texto_puro)
-    stop_words_es = {'para', 'esta', 'este', 'como', 'pero', 'todo', 'con', 'las', 'los', 'del', 'una', 'uno', 'unos', 'unas', 'para', 'meta'}
+    stop_words_es = {'para', 'esta', 'este', 'como', 'pero', 'todo', 'con', 'las', 'los', 'del', 'una', 'uno', 'unos', 'unas', 'para', 'meta', 'from', 'your'}
     palabras_filtradas = [p for p in palabras if p not in stop_words_es]
     conteo_palabras = collections.Counter(palabras_filtradas)
     top_conceptos = [item[0] for item in conteo_palabras.most_common(4)]
@@ -276,13 +288,19 @@ if data_lista:
     df_model = pd.get_dummies(df_fb[['Tipo de publicación', 'Interacciones']].dropna(), columns=['Tipo de publicación'])
     X = df_model.drop('Interacciones', axis=1)
     y = df_model['Interacciones']
-    modelo_ia = LinearRegression().fit(X, y)
     
-    predicciones = modelo_ia.predict(X)
-    error_estandar_residual = np.std(y - predicciones)
+    if not X.empty and len(X.columns) > 0:
+        modelo_ia = LinearRegression().fit(X, y)
+        predicciones = modelo_ia.predict(X)
+        error_estandar_residual = np.std(y - predicciones)
+        base_coef = np.max(modelo_ia.coef_) if len(modelo_ia.coef_) > 0 else 0.20
+    else:
+        # Fallback si el dataset tiene un solo formato y no se pueden generar variables dummy
+        modelo_ia = None
+        error_estandar_residual = 1.0
+        base_coef = 0.20
+        
     promedio_historico = y.mean() if y.mean() > 0 else 1.0
-    
-    base_coef = np.max(modelo_ia.coef_) if len(modelo_ia.coef_) > 0 else 0.20
     indice_crecimiento = min(85.0, max(12.5, (abs(base_coef + promedio_historico) / promedio_historico) * 15))
     margen_error = min(10.0, max(1.0, (error_estandar_residual / promedio_historico) * 3))
 
@@ -294,8 +312,8 @@ if data_lista:
         f"5. Amortiguación de Caídas en Días Valle: Evitar anuncios de venta directa los días {dia_valle.upper()}. Usar esta ventana para publicar historias casuales de interacción.",
         f"6. Aprovechamiento de la Doble Tracción Semanal: Programar campañas importantes escalonadamente entre los días {dia_pico.upper()} y {segundo_dia.upper()}.",
         f"7. Minería de Palabras Clave de Éxito: Inyectar en los primeros párrafos de tus copys los conceptos conceptuales dominantes: '{top_conceptos[0].upper()}' y '{top_conceptos[1].upper()}'.",
-        f"8. Control de Varianza y Mitigación de Errores: Dado que el margen de error predictivo se sitúa en un controlado +-{margen_error:.1f}%, usar pruebas A/B estructuradas.",
-        f"9. Estrategia de Blindaje de Interaction Inicial: Durante los primeros 20 minutos posteriores a la publicación, responder interactivamente para forzar el alcance orgánico.",
+        f"8. Control de Varianza y Mitigación de Errores: Dado que el margen de error predictivo se sitúa en un controlado +-{margen_error:.1f}%, usar pruebas A/B de contenido estructuradas.",
+        f"9. Estrategia de Blindaje de Interacción Inicial: Durante los primeros 20 minutos posteriores a la publicación, responder interactivamente para forzar el alcance orgánico.",
         f"10. Alineación Temática Semántica: Forzar la consistencia de copys adaptando la comunicación a los hitos temporales del mes actual de {mes_actual_nombre.upper()}."
     ]
 
@@ -303,7 +321,6 @@ if data_lista:
 # 7. ENRUTADOR DE NAVEGACIÓN BASADO EN TABS (RECOMENDACIÓN DEL PROFESOR)
 # =========================================================================
 if data_lista:
-    # Pestañas principales que reemplazan por completo la navegación por radio
     tab_dashboard, tab_auditoria, tab_planificador, tab_timeline, tab_exportar = st.tabs([
         "📊 Dashboard de Rendimiento",
         "📈 Auditoría de Formatos y Predicción",
@@ -371,17 +388,20 @@ if data_lista:
             st.write("---")
             
         st.subheader("🤖 Estimador Algorítmico Predictivo (Machine Learning)")
-        formatos_existentes = df_fb['Tipo de publicación'].dropna().unique()
-        indice_defecto = list(formatos_existentes).index(form_top) if form_top in formatos_existentes else 0
-        seleccion_usuario = st.selectbox("Elige el formato de tu próximo contenido para predecir impacto:", formatos_existentes, index=indice_defecto)
-        
-        vector_test = pd.DataFrame(0, index=[0], columns=X.columns)
-        col_c = f"Tipo de publicación_{seleccion_usuario}"
-        if col_c in vector_test.columns:
-            vector_test[col_c] = 1
+        if modelo_ia is not None:
+            formatos_existentes = df_fb['Tipo de publicación'].dropna().unique()
+            indice_defecto = list(formatos_existentes).index(form_top) if form_top in formatos_existentes else 0
+            seleccion_usuario = st.selectbox("Elige el formato de tu próximo contenido para predecir impacto:", formatos_existentes, index=indice_defecto)
             
-        pred = modelo_ia.predict(vector_test)
-        st.metric(label="Interacciones esperadas en simulación", value=f"{max(0, int(pred[0]))} interacciones")
+            vector_test = pd.DataFrame(0, index=[0], columns=X.columns)
+            col_c = f"Tipo de publicación_{seleccion_usuario}"
+            if col_c in vector_test.columns:
+                vector_test[col_c] = 1
+                
+            pred = modelo_ia.predict(vector_test)
+            st.metric(label="Interacciones esperadas en simulación", value=f"{max(0, int(pred[0]))} interacciones")
+        else:
+            st.info("💡 Se requiere un dataset con más de un formato de publicación para habilitar el simulador predictivo.")
 
     # -------------------------------------------------------------------------
     # TAB: PLANIFICADOR PROTOTIPO MENSUAL
