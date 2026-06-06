@@ -285,7 +285,7 @@ if data_lista:
         st.plotly_chart(px.line(df_horas, x='Hora_Num', y='Interacciones', title="Curva de Rendimiento por Hora"), use_container_width=True)
 
     # -------------------------------------------------------------------------
-    # TAB: EXPORTAR REPORTE PDF - COMPLETA REESTRUCTURACIÓN DE PAGINACIÓN REAL
+    # TAB: EXPORTAR REPORTE PDF - COMPLETA REESTRUCTURACIÓN DE PAGINACIÓN REAL Y BLINDAJE CONTRA CEROS
     # -------------------------------------------------------------------------
     with tab_exportar:
         st.header("📄 Descarga de Reporte de Consultoría (4 Páginas Reales)")
@@ -296,6 +296,19 @@ if data_lista:
                 buf = BytesIO()
                 lista_colores = ['#A9DFBF','#F9E79F','#F5B7B1','#AED6F1','#D2B4DE']
                 colores_render = lista_colores[:max(1, len(df_agrupado))]
+                
+                # --- CONTROL DE CONTINGENCIA PARA GRAFICOS EN CERO (PREVIENE EL VALUERROR) ---
+                datos_cantidad = df_agrupado['Cantidad'].tolist()
+                etiquetas_cantidad = df_agrupado['Tipo de publicación'].tolist()
+                if sum(datos_cantidad) == 0:
+                    datos_cantidad = [1] * len(df_agrupado)
+                    etiquetas_cantidad = [f"{t} (Sin datos)" for t in df_agrupado['Tipo de publicación']]
+
+                datos_interacciones = df_agrupado['Total_Interacciones'].tolist()
+                etiquetas_interacciones = df_agrupado['Tipo de publicación'].tolist()
+                if sum(datos_interacciones) == 0:
+                    datos_interacciones = [1] * len(df_agrupado)
+                    etiquetas_interacciones = [f"{t} (0 Interac.)" for t in df_agrupado['Tipo de publicación']]
                 
                 # Usamos PdfPages para separar físicamente las 4 hojas
                 with PdfPages(buf) as pdf:
@@ -323,13 +336,13 @@ if data_lista:
                     txt_b2 = f"• POTENCIAL DE CRECIMIENTO:\n  +{indice_crecimiento:.1f}%\n\n• ERROR ESTÁNDAR RESIDUAL:\n  ±{margen_error:.1f}%"
                     ax1.text(0.54, 0.79, txt_b2, color='#1B5E20', fontsize=9.5, fontfamily='monospace', verticalalignment='top', transform=ax1.transAxes)
                     
-                    # Gráficos de Pastel incrustados en áreas limpias dedicadas
+                    # Gráficos de Pastel incrustados (Variables blindadas)
                     ax_sub_pie1 = fig1.add_axes([0.08, 0.38, 0.38, 0.25])
-                    ax_sub_pie1.pie(df_agrupado['Cantidad'], labels=df_agrupado['Tipo de publicación'], colors=colores_render, textprops={'fontsize': 8}, startangle=90)
+                    ax_sub_pie1.pie(datos_cantidad, labels=etiquetas_cantidad, colors=colores_render, textprops={'fontsize': 8}, startangle=90)
                     ax_sub_pie1.set_title("Volumen por Formato", fontsize=10, color='#1A237E', fontweight='bold')
                     
                     ax_sub_pie2 = fig1.add_axes([0.54, 0.38, 0.38, 0.25])
-                    ax_sub_pie2.pie(df_agrupado['Total_Interacciones'], labels=df_agrupado['Tipo de publicación'], colors=colores_render, textprops={'fontsize': 8}, startangle=90)
+                    ax_sub_pie2.pie(datos_interacciones, labels=etiquetas_interacciones, colors=colores_render, textprops={'fontsize': 8}, startangle=90)
                     ax_sub_pie2.set_title("Masa de Repercusión (Engagement)", fontsize=10, color='#1A237E', fontweight='bold')
                     
                     # Bloque de texto descriptivo bajo
