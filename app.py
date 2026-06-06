@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import matplotlib.gridspec as gridspec
 from matplotlib.backends.backend_pdf import PdfPages
 from io import BytesIO
 from datetime import datetime
@@ -115,13 +116,13 @@ banco_hitos_anuales = {
     8: {"Semana 1": "Estética de Alta Fidelidad", "Semana 2": "Día de la Juventud - Tendencias", "Semana 3": "Carruseles de Autoridad", "Semana 4": "Liquidación de Stock Estacional"},
     9: {"Semana 1": "Flores Amarillas - Interacción", "Semana 2": "Entrada de Otoño - Nueva Paleta", "Semana 3": "Testimonios y Casos de Éxito", "Semana 4": "Estrategias de Calentamiento Q4"},
     10: {"Semana 1": "Preventas de Temporada", "Semana 2": "Lúdico - Dinámicas Creativas", "Semana 3": "Videos Cortos de Intriga", "Semana 4": "Halloween - Campaña Temática"},
-    11: {"Semana 1": "Mensajes de Tradición y Respeto", "Semana 2": "Black Friday - Captación Leads", "Semana 3": "Black Friday - Ofertas Agresivas", "Semana 4": "Post-Venta y Logística Eficiente"},
+    11: {"Semana 1": "Mensajes de Tradición y Respeto", "Semana 2": "Black Friday - Culto a las Ofertas", "Semana 3": "Black Friday - Campaña Agresiva", "Semana 4": "Post-Venta y Logística Eficiente"},
     12: {"Semana 1": "Navidad - Unión y Emotividad", "Semana 2": "Guías de Compra Cruzada", "Semana 3": "Cenas y Paquetes Corporativos", "Semana 4": "Cierre de Año y Nuevas Metas"}
 }
 hitos_mes_actual = banco_hitos_anuales[mes_actual_num]
 
 # =========================================================================
-# 5. PROCESAMIENTO Y ARMONIZACIÓN DEL DATASET
+# 5. PROCESAMIENTO Y ARMONIZACIÓN DEL DATASET (.CSV CORRECCIÓN DE COLUMNAS)
 # =========================================================================
 if archivo_cargado is not None:
     try:
@@ -154,7 +155,7 @@ if archivo_cargado is not None:
         df_fb['Impresiones'] = pd.to_numeric(df_fb['Impresiones'], errors='coerce').fillna(0)
         df_fb['Título'] = df_fb['Título'].astype(str).fillna('')
 
-        # --- PARSING TEMPORAL SEGURO ---
+        # Parsing temporal seguro
         horas_limpias, dias_semana, meses_publicacion = [], [], []
         dias_espanol = {0: 'Lunes', 1: 'Martes', 2: 'Miércoles', 3: 'Jueves', 4: 'Viernes', 5: 'Sábado', 6: 'Domingo'}
         
@@ -239,7 +240,7 @@ if data_lista:
     margen_error = min(10.0, max(1.0, (error_estandar_residual / promedio_historico) * 3))
 
 # =========================================================================
-# 7. ENRUTADOR DE NAVEGACIÓN (TABS)
+# 7. ENRUTADOR DE NAVEGACIÓN (TABS WEB)
 # =========================================================================
 if data_lista:
     st.sidebar.success(f"Procesamiento activo: {len(df_fb)} filas analizadas.")
@@ -271,7 +272,7 @@ if data_lista:
             "Semana Operativa": ["Semana 1", "Semana 2", "Semana 3", "Semana 4"],
             "Estrategia de Contenido": [
                 f"Publicar Formato Líder ({form_top}) enfocado en atracción orgánica masiva.",
-                f"Contenido interactivo en día de soporte ({segundo_dia}) para stabilizar alcance.",
+                f"Contenido interactivo en día de soporte ({segundo_dia}) para estabilizar alcance.",
                 f"Campaña de conversión transaccional en el día pico detectado ({dia_pico}).",
                 f"Posteo estratégico adaptado a la ventana pre-pico de las {int(hora_pico)-1}:30 H."
             ],
@@ -285,7 +286,7 @@ if data_lista:
         st.plotly_chart(px.line(df_horas, x='Hora_Num', y='Interacciones', title="Curva de Rendimiento por Hora"), use_container_width=True)
 
     # -------------------------------------------------------------------------
-    # TAB: EXPORTAR REPORTE PDF - COMPLETA REESTRUCTURACIÓN DE PAGINACIÓN REAL Y BLINDAJE CONTRA CEROS
+    # TAB: EXPORTAR REPORTE PDF - REDISEÑO DE MALLA DE LA PÁGINA 1 SIN SUPERPOSICIONES
     # -------------------------------------------------------------------------
     with tab_exportar:
         st.header("📄 Descarga de Reporte de Consultoría (4 Páginas Reales)")
@@ -297,7 +298,7 @@ if data_lista:
                 lista_colores = ['#A9DFBF','#F9E79F','#F5B7B1','#AED6F1','#D2B4DE']
                 colores_render = lista_colores[:max(1, len(df_agrupado))]
                 
-                # --- CONTROL DE CONTINGENCIA PARA GRAFICOS EN CERO (PREVIENE EL VALUERROR) ---
+                # --- CONTROL DE CONTINGENCIA PARA GRAFICOS EN CERO ---
                 datos_cantidad = df_agrupado['Cantidad'].tolist()
                 etiquetas_cantidad = df_agrupado['Tipo de publicación'].tolist()
                 if sum(datos_cantidad) == 0:
@@ -310,51 +311,63 @@ if data_lista:
                     datos_interacciones = [1] * len(df_agrupado)
                     etiquetas_interacciones = [f"{t} (0 Interac.)" for t in df_agrupado['Tipo de publicación']]
                 
-                # Usamos PdfPages para separar físicamente las 4 hojas
+                # Abrimos el generador multifiguras
                 with PdfPages(buf) as pdf:
                     
                     # ---------------------------------------------------------
-                    # PÁGINA 1: PORTADA Y DIAGNÓSTICO DE FORMATOS
+                    # PÁGINA 1: REDISEÑO COMPLETO USANDO GRIDSPEC DE MATPLOTLIB
                     # ---------------------------------------------------------
-                    fig1, ax1 = plt.subplots(figsize=(11, 8.5))
-                    ax1.axis('off')
+                    fig1 = plt.figure(figsize=(11, 8.5))
                     
-                    # Fondo y Encabezado elegante
-                    ax1.add_patch(patches.Rectangle((0, 0), 1, 1, facecolor='#FAFAFA', transform=ax1.transAxes, zorder=0))
-                    ax1.add_patch(patches.Rectangle((0, 0.90), 1, 0.10, facecolor='#1A237E', transform=ax1.transAxes, zorder=1))
-                    ax1.text(0.04, 0.94, f"AUDITORÍA INTELIGENTE DE REDES SOCIALES: {nombre_negocio.upper()}", color='white', fontsize=14, fontweight='bold', transform=ax1.transAxes)
-                    ax1.text(0.04, 0.91, f"{giro_comercial_dinamico.upper()} | PÁGINA 1: DIAGNÓSTICO DE FORMATOS", color='#90CAF9', fontsize=9, transform=ax1.transAxes)
+                    # Definimos una rejilla de 3 filas. Fila 0 (KPIs), Fila 1 (Pasteles lado a lado), Fila 2 (Texto descriptivo)
+                    gs = gridspec.GridSpec(3, 2, height_ratios=[1.2, 1.8, 1.0], figure=fig1)
+                    gs.update(left=0.05, right=0.95, top=0.88, bottom=0.08, hspace=0.35, wspace=0.25)
                     
-                    # Recuadros Informativos (KPIs)
-                    ax1.add_patch(patches.Rectangle((0.04, 0.68), 0.44, 0.18, facecolor='white', edgecolor='#CFD8DC', linewidth=1, transform=ax1.transAxes))
-                    ax1.text(0.06, 0.82, "MÉTRICAS BASE DEL CANVAS", color='#1A237E', fontsize=11, fontweight='bold', transform=ax1.transAxes)
+                    # Canvas de fondo decorativo para los títulos fijos superiores
+                    ax_bg = fig1.add_axes([0, 0, 1, 1], zorder=0)
+                    ax_bg.axis('off')
+                    ax_bg.add_patch(patches.Rectangle((0, 0), 1, 1, facecolor='#FAFAFA'))
+                    ax_bg.add_patch(patches.Rectangle((0, 0.91), 1, 0.09, facecolor='#1A237E'))
+                    ax_bg.text(0.04, 0.95, f"AUDITORÍA INTELIGENTE DE REDES SOCIALES: {nombre_negocio.upper()}", color='white', fontsize=14, fontweight='bold')
+                    ax_bg.text(0.04, 0.92, f"{giro_comercial_dinamico.upper()} | PÁGINA 1: DIAGNÓSTICO DE FORMATOS", color='#90CAF9', fontsize=9)
+                    ax_bg.text(0.04, 0.03, f"Universidad Casa Grande — Reporte Técnico para {nombre_negocio.upper()} | Página 1", color='#78909C', fontsize=9)
+
+                    # Subplot 1 (Fila 0, Columna 0) - KPIs Base
+                    ax_kpi1 = fig1.add_subplot(gs[0, 0])
+                    ax_kpi1.axis('off')
+                    ax_kpi1.add_patch(patches.Rectangle((0, 0), 1, 1, facecolor='white', edgecolor='#CFD8DC', linewidth=1))
+                    ax_kpi1.text(0.05, 0.82, "MÉTRICAS BASE DEL CANVAS", color='#1A237E', fontsize=11, fontweight='bold')
                     txt_b1 = f"• Posts Auditados: {len(df_fb)}\n• Formato Top: {form_top.upper()}\n• Formato Crítico: {form_peor.upper()}\n• Día Pico: {dia_pico.upper()}\n• Hora Pico: {int(hora_pico)}:00 H"
-                    ax1.text(0.06, 0.79, txt_b1, color='#37474F', fontsize=9.5, fontfamily='monospace', verticalalignment='top', transform=ax1.transAxes)
+                    ax_kpi1.text(0.05, 0.70, txt_b1, color='#37474F', fontsize=9.5, fontfamily='monospace', verticalalignment='top')
                     
-                    ax1.add_patch(patches.Rectangle((0.52, 0.68), 0.44, 0.18, facecolor='white', edgecolor='#CFD8DC', linewidth=1, transform=ax1.transAxes))
-                    ax1.text(0.54, 0.82, "PREDICCIONES DEL MOTOR (ML)", color='#1A237E', fontsize=11, fontweight='bold', transform=ax1.transAxes)
+                    # Subplot 2 (Fila 0, Columna 1) - Predicciones ML
+                    ax_kpi2 = fig1.add_subplot(gs[0, 1])
+                    ax_kpi2.axis('off')
+                    ax_kpi2.add_patch(patches.Rectangle((0, 0), 1, 1, facecolor='white', edgecolor='#CFD8DC', linewidth=1))
+                    ax_kpi2.text(0.05, 0.82, "PREDICCIONES DEL MOTOR (ML)", color='#1A237E', fontsize=11, fontweight='bold')
                     txt_b2 = f"• POTENCIAL DE CRECIMIENTO:\n  +{indice_crecimiento:.1f}%\n\n• ERROR ESTÁNDAR RESIDUAL:\n  ±{margen_error:.1f}%"
-                    ax1.text(0.54, 0.79, txt_b2, color='#1B5E20', fontsize=9.5, fontfamily='monospace', verticalalignment='top', transform=ax1.transAxes)
+                    ax_kpi2.text(0.05, 0.70, txt_b2, color='#1B5E20', fontsize=9.5, fontfamily='monospace', verticalalignment='top')
+
+                    # Subplot 3 (Fila 1, Columna 0) - Pastel Volumen
+                    ax_pie1 = fig1.add_subplot(gs[1, 0])
+                    ax_pie1.pie(datos_cantidad, labels=etiquetas_cantidad, colors=colores_render, textprops={'fontsize': 8}, startangle=90)
+                    ax_pie1.set_title("Volumen por Formato", fontsize=10, color='#1A237E', fontweight='bold', pad=10)
                     
-                    # Gráficos de Pastel incrustados (Variables blindadas)
-                    ax_sub_pie1 = fig1.add_axes([0.08, 0.38, 0.38, 0.25])
-                    ax_sub_pie1.pie(datos_cantidad, labels=etiquetas_cantidad, colors=colores_render, textprops={'fontsize': 8}, startangle=90)
-                    ax_sub_pie1.set_title("Volumen por Formato", fontsize=10, color='#1A237E', fontweight='bold')
-                    
-                    ax_sub_pie2 = fig1.add_axes([0.54, 0.38, 0.38, 0.25])
-                    ax_sub_pie2.pie(datos_interacciones, labels=etiquetas_interacciones, colors=colores_render, textprops={'fontsize': 8}, startangle=90)
-                    ax_sub_pie2.set_title("Masa de Repercusión (Engagement)", fontsize=10, color='#1A237E', fontweight='bold')
-                    
-                    # Bloque de texto descriptivo bajo
-                    ax1.add_patch(patches.Rectangle((0.04, 0.08), 0.92, 0.24, facecolor='white', edgecolor='#CFD8DC', linewidth=1, transform=ax1.transAxes))
-                    ax1.text(0.06, 0.28, "ANÁLISIS DE DISTRIBUCIÓN DE CONTENIDOS", color='#1A237E', fontsize=11, fontweight='bold', transform=ax1.transAxes)
+                    # Subplot 4 (Fila 1, Columna 1) - Pastel Engagement
+                    ax_pie2 = fig1.add_subplot(gs[1, 1])
+                    ax_pie2.pie(datos_interacciones, labels=etiquetas_interacciones, colors=colores_render, textprops={'fontsize': 8}, startangle=90)
+                    ax_pie2.set_title("Masa de Repercusión (Engagement)", fontsize=10, color='#1A237E', fontweight='bold', pad=10)
+
+                    # Subplot 5 (Fila 2, Todo el ancho) - Caja Descriptiva Inferior
+                    ax_desc = fig1.add_subplot(gs[2, :])
+                    ax_desc.axis('off')
+                    ax_desc.add_patch(patches.Rectangle((0, 0), 1, 1, facecolor='white', edgecolor='#CFD8DC', linewidth=1))
+                    ax_desc.text(0.03, 0.80, "ANÁLISIS DE DISTRIBUCIÓN DE CONTENIDOS", color='#1A237E', fontsize=11, fontweight='bold')
                     txt_desglose = ""
                     for _, r in df_agrupado.head(3).iterrows():
                         txt_desglose += f"• {r['Tipo de publicación'].upper()}: Cuenta con {r['Cantidad']} posts públicos, promediando {r['Promedio_Interacciones']:.1f} interacciones unitarias.\n"
-                    ax1.text(0.06, 0.24, txt_desglose, color='#37474F', fontsize=10, linespacing=1.4, verticalalignment='top', transform=ax1.transAxes)
+                    ax_desc.text(0.03, 0.65, txt_desglose, color='#37474F', fontsize=10, linespacing=1.3, verticalalignment='top')
                     
-                    # Pie de página
-                    ax1.text(0.04, 0.03, f"Universidad Casa Grande — Reporte Técnico para {nombre_negocio.upper()} | Página 1", color='#78909C', fontsize=9, transform=ax1.transAxes)
                     pdf.savefig(fig1)
                     plt.close(fig1)
                     
@@ -369,7 +382,6 @@ if data_lista:
                     ax2.text(0.04, 0.94, f"AUDITORÍA INTELIGENTE DE REDES SOCIALES: {nombre_negocio.upper()}", color='white', fontsize=14, fontweight='bold', transform=ax2.transAxes)
                     ax2.text(0.04, 0.91, f"ANÁLISIS TEMPORAL | PÁGINA 2: COMPORTAMIENTO DE AUDIENCIA", color='#90CAF9', fontsize=9, transform=ax2.transAxes)
                     
-                    # Gráficos lineales limpios en la mitad superior de la hoja
                     ax_sub_line1 = fig2.add_axes([0.08, 0.48, 0.38, 0.34])
                     ax_sub_line1.plot(df_dias['Dia_Semana'].astype(str), df_dias['Interacciones'], color='#85C1E9', linewidth=3, marker='o')
                     ax_sub_line1.set_title("Engagement por Día de la Semana", fontsize=10, color='#1A237E', fontweight='bold')
@@ -382,7 +394,6 @@ if data_lista:
                     ax_sub_line2.tick_params(labelsize=8)
                     ax_sub_line2.grid(True, linestyle='--', alpha=0.5)
                     
-                    # Caja de conclusiones de la hoja 2
                     ax2.add_patch(patches.Rectangle((0.04, 0.08), 0.92, 0.34, facecolor='white', edgecolor='#CFD8DC', linewidth=1, transform=ax2.transAxes))
                     ax2.text(0.06, 0.38, "CONCLUSIONES CRONOLÓGICAS DE TRACCIÓN ALGORÍTMICA", color='#1A237E', fontsize=11, fontweight='bold', transform=ax2.transAxes)
                     txt_temporal = (
@@ -409,7 +420,6 @@ if data_lista:
                     ax3.text(0.04, 0.94, f"PLANIFICACIÓN OPERATIVA INTEGRAL: {nombre_negocio.upper()}", color='white', fontsize=14, fontweight='bold', transform=ax3.transAxes)
                     ax3.text(0.04, 0.91, f"MES OPERATIVO DE {mes_actual_nombre.upper()} | PÁGINA 3: MATRIZ DE REDISTRIBUCIÓN SEMANAL", color='#90CAF9', fontsize=9, transform=ax3.transAxes)
                     
-                    # Bloque de la Matriz Calendario Amplia
                     ax3.add_patch(patches.Rectangle((0.04, 0.08), 0.92, 0.76, facecolor='white', edgecolor='#CFD8DC', linewidth=1, transform=ax3.transAxes))
                     ax3.text(0.06, 0.80, f"MATRIZ ESTRATÉGICA PREDICTIVA DE PLANIFICACIÓN - {mes_actual_nombre.upper()}", color='#1A237E', fontsize=12, fontweight='bold', transform=ax3.transAxes)
                     
@@ -444,7 +454,6 @@ if data_lista:
                     ax4.text(0.04, 0.94, f"PLANIFICACIÓN OPERATIVA INTEGRAL: {nombre_negocio.upper()}", color='white', fontsize=14, fontweight='bold', transform=ax4.transAxes)
                     ax4.text(0.04, 0.91, "SISTEMA DE CONTROL GENERAL | PÁGINA 4: DECÁLOGO DE DIRECTRICES EJECUTIVAS", color='#90CAF9', fontsize=9, transform=ax4.transAxes)
                     
-                    # Caja contenedora del decálogo completo
                     ax4.add_patch(patches.Rectangle((0.04, 0.08), 0.92, 0.76, facecolor='white', edgecolor='#CFD8DC', linewidth=1, transform=ax4.transAxes))
                     ax4.text(0.06, 0.80, "DIRECTRICES TÉCNICAS RECOMENDADAS PARA MONITOREO Y CONTROL", color='#1A237E', fontsize=12, fontweight='bold', transform=ax4.transAxes)
                     
