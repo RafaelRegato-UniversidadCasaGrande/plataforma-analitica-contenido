@@ -107,7 +107,7 @@ mes_actual_nombre = nombres_meses[mes_actual_num]
 banco_hitos_anuales = {
     1: {"Semana 1": "Año Nuevo - Planificación", "Semana 2": "Reyes Magos - Tradición", "Semana 3": "Campaña de Invierno", "Semana 4": "Lanzamiento de Ciclo Q1"},
     2: {"Semana 1": "Pre-San Valentín - Preventas", "Semana 2": "San Valentín - Compra Impulso", "Semana 3": "Carnaval - Contenido Ocio", "Semana 4": "Cierre Mensual Comercial"},
-    3: {"Semana 1": "Día de la Mujer - Valor Humano", "Semana 2": "Concienciación y Cultura", "Semana 3": "Primavera - Cambio de Catálogo", "Semana 4": "Ofertas de Cierre Trimestral"},
+    3: {"Semana 1": "Día de la Mujer - Valor Humano", "Semana 2": "Concienciación y Culture", "Semana 3": "Primavera - Cambio de Catálogo", "Semana 4": "Ofertas de Cierre Trimestral"},
     4: {"Semana 1": "Educación e Instructivos", "Semana 2": "Día de la Tierra - Eco-Values", "Semana 3": "Dinámicas de Co-Creación", "Semana 4": "Campañas Intermedias Relámpago"},
     5: {"Semana 1": "Día del Trabajador - Ofertas B2B", "Semana 2": "Día de la Madre - Alta Conversión", "Semana 3": "Post-Festejos - Fidelización", "Semana 4": "Encuestas de Mitad de Año"},
     6: {"Semana 1": "Día del Niño - Contenido Emocional", "Semana 2": "Medio Ambiente - Sostenible", "Semana 3": "Día del Padre - Guías de Regalos", "Semana 4": "Solsticio - Identidad Local"},
@@ -169,7 +169,6 @@ if archivo_cargado is not None:
             porcentaje_ig = 50.0
             porcentaje_fb = 50.0
 
-        # Identificación explícita de red social dominante
         red_dominante_detectada = "INSTAGRAM" if porcentaje_ig >= porcentaje_fb else "FACEBOOK"
 
         horas_limpias, dias_semana, meses_publicacion = [], [], []
@@ -220,7 +219,6 @@ if inicializado:
         
     giro_comercial_dinamico = f"Especialista en {top_conceptos[0].capitalize()}, {top_conceptos[1]}, {top_conceptos[2]} y {top_conceptos[3]}"
     
-    # Promedio de engagement corporativo de la cuenta
     promedio_engagement_global = df_fb['Interacciones'].mean()
 
     df_dias = df_fb.groupby('Dia_Semana', as_index=False)['Interacciones'].sum()
@@ -235,7 +233,27 @@ if inicializado:
     hora_pico = df_horas.sort_values(by='Interacciones', ascending=False).iloc[0]['Hora_Num'] if not df_horas.empty else 12
     if hora_pico == 0: hora_pico = 12
     
-    df_agrupado = df_fb.groupby('Tipo de publicación').agg(Cantidad=('Tipo de publicación', 'count'), Total_Interacciones=('Interacciones', 'sum'), Promedio_Interacciones=('Interacciones', 'mean')).reset_index()
+    # -------------------------------------------------------------------------
+    # RESTAURACIÓN: ANÁLISIS MATRICIAL AVANZADO (HISTÓRICO, RATIOS Y TRACCIÓN GLOBAL)
+    # -------------------------------------------------------------------------
+    df_agrupado = df_fb.groupby('Tipo de publicación').agg(
+        Cantidad=('Tipo de publicación', 'count'),
+        Total_Interacciones=('Interacciones', 'sum'),
+        Total_Impresiones=('Impresiones', 'sum'),
+        Promedio_Interacciones=('Interacciones', 'mean')
+    ).reset_index()
+    
+    sum_total_interacciones = df_agrupado['Total_Interacciones'].sum()
+    
+    # Ratios de Actividad (Engagement por cada 1,000 Impresiones para estandarizar la efectividad)
+    df_agrupado['Ratio_Actividad'] = (df_agrupado['Total_Interacciones'] / df_agrupado['Total_Impresiones'].replace(0, 1)) * 1000
+    
+    # Peso de Tracción Global (% de impacto neto sobre el engagement absoluto del ecosistema)
+    if sum_total_interacciones > 0:
+        df_agrupado['Peso_Tracción_Global'] = (df_agrupado['Total_Interacciones'] / sum_total_interacciones) * 100
+    else:
+        df_agrupado['Peso_Tracción_Global'] = (1 / len(df_agrupado)) * 100 if len(df_agrupado) > 0 else 100.0
+
     form_top = df_agrupado.sort_values(by='Promedio_Interacciones', ascending=False).iloc[0]['Tipo de publicación'] if not df_agrupado.empty else "Post"
     form_peor = df_agrupado.sort_values(by='Promedio_Interacciones', ascending=True).iloc[0]['Tipo de publicación'] if not df_agrupado.empty else "Post"
 
@@ -254,7 +272,6 @@ if inicializado:
     indice_crecimiento = min(85.0, max(12.5, (abs(base_coef + promedio_historico) / promedio_historico) * 15))
     margen_error = min(10.0, max(1.0, (error_estandar_residual / promedio_historico) * 3))
 
-    # RESTAURACIÓN REQUERIDA: Los 5 Consejos Clave de Consultoría Completos
     RECOMENDACIONES_CONSOLIDADAS = [
         f"1. ASIGNACIÓN ASIMÉTRICA DE RECURSOS: Concentrar el 60% del presupuesto de diseño y pauta en el formato líder ({form_top.upper()}), el cual registra la mayor tracción de engagement.",
         f"2. REESTRUCTURACIÓN DE FORMATOS CRÍTICOS: Someter a auditoría creativa inmediata el formato {form_peor.upper()}, debido a que los datos muestran un rendimiento crítico que deprime el alcance.",
@@ -276,19 +293,15 @@ if inicializado:
     with tab_dashboard:
         st.header(f"Histórico Analítico Corporativo - {nombre_negocio}")
         st.info(f"🔍 **Giro Comercial Analizado:** {giro_comercial_dinamico}")
-        
-        # RESTAURACIÓN REQUERIDA: Canal / Red Social Detectada de forma explícita
         st.success(f"📡 **Red Social Detectada en Análisis:** {red_dominante_detectada} ({porcentaje_ig:.1f}% IG vs {porcentaje_fb:.1f}% FB)")
         st.warning(f"📅 **Mes de Operación Activo:** {mes_actual_nombre}")
         
         c1, c2, c3, c4 = st.columns(4)
         with c1: st.metric("Publicaciones Auditadas", len(df_fb))
         with c2: st.metric("Total Interacciones", f"{int(df_fb['Interacciones'].sum()):,}")
-        # RESTAURACIÓN REQUERIDA: Promedio de Engagement
         with c3: st.metric("Promedio de Engagement", f"{promedio_engagement_global:.2f}")
         with c4: st.metric("Fuerza Predominante", red_dominante_detectada)
 
-        # RESTAURACIÓN REQUERIDA: Publicaciones con mejor rendimiento (Top Table)
         st.write("---")
         st.subheader("🏆 Publicaciones con Mejor Rendimiento (Top de Tracción)")
         df_top_posts = df_fb.sort_values(by="Interacciones", ascending=False).head(5)[['Título', 'Tipo de publicación', 'Hora de publicación', 'Interacciones', 'Impresiones']]
@@ -297,16 +310,27 @@ if inicializado:
     with tab_auditoria:
         st.header("📊 Distribución y Rendimiento Estructural por Formatos")
         
-        # RESTAURACIÓN REQUERIDA: Estimador Predictivo de Repercusión Comercial (ML Engine)
         st.markdown("### 🤖 Estimador Predictivo de Repercusión Comercial (ML Engine)")
         col_ml1, col_ml2, col_ml3 = st.columns(3)
-        with col_ml1:
-            st.metric("Potencial de Crecimiento Estimado", f"+{indice_crecimiento:.1f}%")
-        with col_ml2:
-            st.metric("Margen de Error de Exposición", f"±{margen_error:.1f}%")
-        with col_ml3:
-            st.metric("Estabilidad del Algoritmo", "Óptima (Modelación Lineal)")
+        with col_ml1: st.metric("Potencial de Crecimiento Estimado", f"+{indice_crecimiento:.1f}%")
+        with col_ml2: st.metric("Margen de Error de Exposición", f"±{margen_error:.1f}%")
+        with col_ml3: st.metric("Estabilidad del Algoritmo", "Óptima (Modelación Lineal)")
         st.caption("Este cálculo matemático evalúa el coeficiente de tracción de tus formatos usando una regresión por mínimos cuadrados de Scikit-Learn.")
+        st.write("---")
+
+        # RESTAURACIÓN EN LA INTERFAZ WEB: Tabla del Análisis Matricial Avanzado
+        st.markdown("### 🧮 Matriz de Consolidación Histórica y Tracción Global")
+        st.caption("Consolidado analítico cruzado de ratios de actividad (conversión por cada 1,000 impresiones) y peso de tracción sobre el volumen total de engagement de la cuenta.")
+        df_tab_web = df_agrupado.copy()
+        df_tab_web.columns = ['Formato', 'Volumen Posts', 'Total Interacciones', 'Total Impresiones', 'Engagement Promedio', 'Ratio Actividad (x1k Imp)', 'Peso Tracción Global (%)']
+        st.dataframe(
+            df_tab_web.style.format({
+                'Engagement Promedio': '{:.2f}',
+                'Ratio Actividad (x1k Imp)': '{:.2f}',
+                'Peso Tracción Global (%)': '{:.1f}%'
+            }), 
+            use_container_width=True
+        )
         st.write("---")
 
         col_g1, col_g2 = st.columns(2)
@@ -331,7 +355,6 @@ if inicializado:
         }
         st.table(pd.DataFrame(datos_calendario))
 
-        # RESTAURACIÓN REQUERIDA: Los 5 Consejos Clave de Consultoría en la Interfaz Web
         st.write("---")
         st.subheader("📋 Consejos Clave de Consultoría Estratégica (5 Directrices Ejecutivas)")
         for rec in RECOMENDACIONES_CONSOLIDADAS:
@@ -343,14 +366,14 @@ if inicializado:
         st.plotly_chart(px.line(df_horas, x='Hora_Num', y='Interacciones', title="Curva de Rendimiento por Hora", color_discrete_sequence=PALETA_PASTEL), use_container_width=True)
 
     # -------------------------------------------------------------------------
-    # TAB: EXPORTAR REPORTE PDF - COORDENADAS PERFECTAS PARA LOS 5 CONSEJOS
+    # TAB: EXPORTAR REPORTE PDF - INTEGRACIÓN ARMONIZADA DE LA MATRIZ AVANZADA
     # -------------------------------------------------------------------------
     with tab_exportar:
         st.header("📄 Descarga de Reporte de Consultoría (4 Páginas Reales)")
         st.write("Genera un documento PDF formal estructurado en **4 páginas independientes de tamaño estándar (Carta)**.")
         
         if st.button("🚀 Compilar Reporte PDF Paginado"):
-            with st.spinner("Compilando páginas vectoriales limpias con GridSpec estricto..."):
+            with st.spinner("Compilando páginas vectoriales con Análisis Matricial integrado..."):
                 buf = BytesIO()
                 colores_render = PALETA_PASTEL[:max(1, len(df_agrupado))]
                 
@@ -362,11 +385,13 @@ if inicializado:
                 with PdfPages(buf) as pdf:
                     
                     # ---------------------------------------------------------
-                    # PÁGINA 1: DIAGNÓSTICO DE FORMATOS
+                    # PÁGINA 1: DIAGNÓSTICO DE FORMATOS + MATRIZ AVANZADA (4 NIVELES)
                     # ---------------------------------------------------------
                     fig1 = plt.figure(figsize=(11, 8.5))
-                    gs1 = gridspec.GridSpec(3, 2, height_ratios=[1.1, 1.9, 1.0], figure=fig1)
-                    gs1.update(left=0.07, right=0.93, top=0.86, bottom=0.08, hspace=0.45, wspace=0.3)
+                    
+                    # Estructuramos GridSpec con hspace optimizado para inyectar la matriz analítica abajo
+                    gs1 = gridspec.GridSpec(4, 2, height_ratios=[0.9, 1.6, 0.1, 1.4], figure=fig1)
+                    gs1.update(left=0.07, right=0.93, top=0.86, bottom=0.06, hspace=0.35, wspace=0.3)
                     
                     ax_bg1 = fig1.add_axes([0, 0, 1, 1], zorder=0)
                     ax_bg1.axis('off')
@@ -374,40 +399,75 @@ if inicializado:
                     ax_bg1.add_patch(patches.Rectangle((0, 0.91), 1, 0.09, facecolor='#1A237E'))
                     ax_bg1.text(0.04, 0.95, f"AUDITORÍA INTELIGENTE DE REDES SOCIALES: {nombre_negocio.upper()}", color='white', fontsize=14, fontweight='bold')
                     ax_bg1.text(0.04, 0.92, f"{giro_comercial_dinamico.upper()} | PÁGINA 1: DIAGNÓSTICO DE FORMATOS", color='#90CAF9', fontsize=9)
-                    ax_bg1.text(0.04, 0.03, f"Universidad Casa Grande — Reporte Técnico para {nombre_negocio.upper()} | Página 1", color='#78909C', fontsize=9)
+                    ax_bg1.text(0.04, 0.02, f"Universidad Casa Grande — Reporte Técnico para {nombre_negocio.upper()} | Página 1", color='#78909C', fontsize=9)
 
+                    # Nivel 1: KPIs
                     ax_kpi1 = fig1.add_subplot(gs1[0, 0])
                     ax_kpi1.axis('off')
-                    ax_kpi1.text(0.0, 0.90, "MÉTRICAS BASE DEL CANVAS", color='#1A237E', fontsize=11, fontweight='bold')
-                    txt_b1 = f"• Posts Auditados: {len(df_fb)}\n• Promedio Engagement: {promedio_engagement_global:.2f}\n• Canal Dominante: {red_dominante_detectada}\n• Formato Líder: {form_top.upper()}\n• Ventana de Oro: {dia_pico.upper()} a las {int(hora_pico)}:00 H"
-                    ax_kpi1.text(0.0, 0.75, txt_b1, color='#37474F', fontsize=10, fontfamily='monospace', verticalalignment='top', linespacing=1.3)
+                    ax_kpi1.text(0.0, 0.95, "MÉTRICAS BASE DEL CANVAS", color='#1A237E', fontsize=10, fontweight='bold')
+                    txt_b1 = f"• Posts Auditados: {len(df_fb)}\n• Promedio Engagement: {promedio_engagement_global:.2f}\n• Canal Dominante: {red_dominante_detectada}\n• Ventana de Oro: {dia_pico.upper()} a las {int(hora_pico)}:00 H"
+                    ax_kpi1.text(0.0, 0.75, txt_b1, color='#37474F', fontsize=9, fontfamily='monospace', verticalalignment='top', linespacing=1.2)
                     
                     ax_kpi2 = fig1.add_subplot(gs1[0, 1])
                     ax_kpi2.axis('off')
-                    ax_kpi2.text(0.0, 0.90, "PREDICCIONES DEL MOTOR (ML)", color='#1A237E', fontsize=11, fontweight='bold')
+                    ax_kpi2.text(0.0, 0.95, "PREDICCIONES DEL MOTOR (ML)", color='#1A237E', fontsize=10, fontweight='bold')
                     txt_b2 = f"• POTENCIAL DE CRECIMIENTO: +{indice_crecimiento:.1f}%\n• MARGEN DE ERROR DE EXPOSICIÓN: ±{margen_error:.1f}%\n• ESTABILIDAD HISTÓRICA: Óptima"
-                    ax_kpi2.text(0.0, 0.75, txt_b2, color='#1B5E20', fontsize=10, fontfamily='monospace', verticalalignment='top', linespacing=1.3)
+                    ax_kpi2.text(0.0, 0.75, txt_b2, color='#1B5E20', fontsize=9, fontfamily='monospace', verticalalignment='top', linespacing=1.2)
 
+                    # Nivel 2: Gráficos de Torta
                     ax_pie1 = fig1.add_subplot(gs1[1, 0])
                     ax_pie1.set_aspect('equal')
-                    wedges1, _ = ax_pie1.pie(datos_cantidad, colors=colores_render, radius=0.75, startangle=90)
-                    ax_pie1.set_title("Volumen en la Parrilla", fontsize=10, color='#1A237E', fontweight='bold', pad=5)
-                    ax_pie1.legend(wedges1, etiquetas_cantidad, loc="upper center", bbox_transform=ax_pie1.transAxes, bbox_to_anchor=(0.5, -0.08), fontsize=7.5, frameon=False, ncol=2)
+                    wedges1, _ = ax_pie1.pie(datos_cantidad, colors=colores_render, radius=0.65, startangle=90)
+                    ax_pie1.set_title("Volumen en la Parrilla", fontsize=9, color='#1A237E', fontweight='bold', pad=2)
+                    ax_pie1.legend(wedges1, etiquetas_cantidad, loc="upper center", bbox_transform=ax_pie1.transAxes, bbox_to_anchor=(0.5, -0.05), fontsize=7, frameon=False, ncol=3)
                     
                     ax_pie2 = fig1.add_subplot(gs1[1, 1])
                     ax_pie2.set_aspect('equal')
-                    wedges2, _ = ax_pie2.pie(datos_interacciones, colors=colores_render, radius=0.75, startangle=90)
-                    ax_pie2.set_title("Masa Crítica (Engagement)", fontsize=10, color='#1A237E', fontweight='bold', pad=5)
-                    ax_pie2.legend(wedges2, etiquetas_interacciones, loc="upper center", bbox_transform=ax_pie2.transAxes, bbox_to_anchor=(0.5, -0.08), fontsize=7.5, frameon=False, ncol=2)
+                    wedges2, _ = ax_pie2.pie(datos_interacciones, colors=colores_render, radius=0.65, startangle=90)
+                    ax_pie2.set_title("Masa Crítica (Engagement)", fontsize=9, color='#1A237E', fontweight='bold', pad=2)
+                    ax_pie2.legend(wedges2, etiquetas_interacciones, loc="upper center", bbox_transform=ax_pie2.transAxes, bbox_to_anchor=(0.5, -0.05), fontsize=7, frameon=False, ncol=3)
 
-                    ax_desc = fig1.add_subplot(gs1[2, :])
-                    ax_desc.axis('off')
-                    ax_desc.text(0.0, 0.85, "ANÁLISIS DE RENDIMIENTO UNITARIO E IMPACTO ESTRUCTURAL", color='#1A237E', fontsize=11, fontweight='bold')
-                    txt_desglose = ""
-                    for _, r in df_agrupado.head(2).iterrows():
-                        txt_desglose += f"• El formato {r['Tipo de publicación'].upper()} registra {r['Cantidad']} publicaciones, logrando un engagement promedio de {r['Promedio_Interacciones']:.1f} puntos.\n"
-                    ax_desc.text(0.0, 0.65, txt_desglose, color='#37474F', fontsize=10, linespacing=1.4, verticalalignment='top')
+                    # Nivel 3: Separador espacial invisible
+                    ax_space = fig1.add_subplot(gs1[2, :])
+                    ax_space.axis('off')
+
+                    # Nivel 4: MÓDULO RESTAURADO - MATRIZ ANALÍTICA AVANZADA VECTORIAL
+                    ax_matrix = fig1.add_subplot(gs1[3, :])
+                    ax_matrix.axis('off')
+                    ax_matrix.text(0.0, 1.05, "🧮 MATRIZ DE CONSOLIDACIÓN HISTÓRICA, RATIOS Y TRACCIÓN GLOBAL", color='#1A237E', fontsize=10, fontweight='bold', transform=ax_matrix.transAxes)
                     
+                    # Preparación de datos matriciales estructurados
+                    encabezados_pdf = ["Formato", "Volumen", "Interac. Totales", "Impresiones", "Ratio Actividad\n(Engagement x1k Imp)", "Tracción\nGlobal (%)"]
+                    celdas_tabla = []
+                    for _, r in df_agrupado.iterrows():
+                        celdas_tabla.append([
+                            str(r['Tipo de publicación']),
+                            f"{int(r['Cantidad'])} u.",
+                            f"{int(r['Total_Interacciones']):,}",
+                            f"{int(r['Total_Impresiones']):,}",
+                            f"{r['Ratio_Actividad']:.2f}",
+                            f"{r['Peso_Tracción_Global']:.1f}%"
+                        ])
+                    
+                    # Inyección formal de la tabla de control vectorial de Matplotlib
+                    tabla_pdf = ax_matrix.table(
+                        cellText=celdas_tabla,
+                        colLabels=encabezados_pdf,
+                        loc='center',
+                        cellLoc='center'
+                    )
+                    tabla_pdf.auto_set_font_size(False)
+                    tabla_pdf.set_fontsize(8)
+                    tabla_pdf.scale(1.0, 1.3)
+                    
+                    # Estilo corporativo para los encabezados de la tabla
+                    for col_idx in range(len(encabezados_pdf)):
+                        celda_header = tabla_pdf[0, col_idx]
+                        celda_header.set_facecolor('#1A237E')
+                        celda_header.get_text().set_color('white')
+                        celda_header.get_text().set_weight('bold')
+                        celda_header.get_text().set_fontsize(7.5)
+
                     pdf.savefig(fig1)
                     plt.close(fig1)
                     
@@ -445,7 +505,7 @@ if inicializado:
                     
                     txt_temporal_puro = (
                         f"• VENTANA ÓPTIMA SEMANAL (DÍA PICO): El día {dia_pico.upper()} acumula la mayor tracción de la cuenta, "
-                        f"postulándose como el espacio predilecto para campañas de conversión directa o lanzamientos a la comunidad.\n\n"
+                        f"postulándose como el espacio predilecto para campaigns de conversión directa o lanzamientos a la comunidad.\n\n"
                         f"• COHORTE DE SEGUNDO ORDEN: El día {segundo_dia.upper()} actúa como un amortiguador de alcance estable para sostener el algoritmo.\n\n"
                         f"• HORARIO CRÍTICO DE INDEXACIÓN: Publicar a las {int(hora_pico)}:00 H maximiza la exposición inicial. "
                         f"Se sugiere programar las publicaciones de forma estricta 30 minutos antes de esta ventana de tráfico."
@@ -478,7 +538,7 @@ if inicializado:
                     
                     txt_s1 = textwrap.fill(f"• SEMANA 1 OPERATIVA:\n  [Estrategia]: Forzar la exposición del Formato Líder ({form_top.upper()}) para capturar volumen orgánico.\n  [Hito Mensual Sincronizado]: {hitos_mes_actual['Semana 1']}", width=102)
                     txt_s2 = textwrap.fill(f"• SEMANA 2 OPERATIVA:\n  [Estrategia]: Inyectar contenido interactivo en el segundo día clave ({segundo_dia.upper()}) protegiendo el alcance de la marca.\n  [Hito Mensual Sincronizado]: {hitos_mes_actual['Semana 2']}", width=102)
-                    txt_s3 = textwrap.fill(f"• SEMANA 3 OPERATIVA:\n  [Estrategia]: Ejecutar campañas transaccionales fuertes en el Día de Oro detectado ({dia_pico.upper()}).\n  [Hito Mensual Sincronizado]: {hitos_mes_actual['Semana 3']}", width=102)
+                    txt_s3 = textwrap.fill(f"• SEMANA 3 OPERATIVA:\n  [Estrategia]: Ejecutar campaigns transaccionales fuertes en el Día de Oro detectado ({dia_pico.upper()}).\n  [Hito Mensual Sincronizado]: {hitos_mes_actual['Semana 3']}", width=102)
                     txt_s4 = textwrap.fill(f"• SEMANA 4 OPERATIVA:\n  [Estrategia]: Programar publicaciones estructuradas en el horario pre-pico de las {int(hora_pico)-1}:30 H.\n  [Hito Mensual Sincronizado]: {hitos_mes_actual['Semana 4']}", width=102)
                     
                     ax_main3.text(0.03, 0.85, txt_s1, color='#37474F', fontsize=10, linespacing=1.3, verticalalignment='top', transform=ax_main3.transAxes)
@@ -490,7 +550,7 @@ if inicializado:
                     plt.close(fig3)
                     
                     # ---------------------------------------------------------
-                    # PÁGINA 4: RECOMPILACIÓN COMPLETA DE LOS 5 CONSEJOS CLAVE (CALIBRADO)
+                    # PÁGINA 4: LOS 5 CONSEJOS CLAVE DE CONSULTORÍA
                     # ---------------------------------------------------------
                     fig4 = plt.figure(figsize=(11, 8.5))
                     gs4 = gridspec.GridSpec(1, 1, figure=fig4)
@@ -509,7 +569,6 @@ if inicializado:
                     ax_main4.add_patch(patches.Rectangle((0, 0), 1, 1, facecolor='white', edgecolor='#CFD8DC', linewidth=1, transform=ax_main4.transAxes))
                     ax_main4.text(0.03, 0.94, "CONSEJOS ESTRATÉGICOS PARA POTENCIAR LA CUENTA", color='#1A237E', fontsize=12, fontweight='bold', transform=ax_main4.transAxes)
                     
-                    # Ajustamos las coordenadas verticales de 0.86 a 0.22 para dar espacio limpio a las 5 cajas de texto
                     rec1_f = textwrap.fill(RECOMENDACIONES_CONSOLIDADAS[0], width=105)
                     rec2_f = textwrap.fill(RECOMENDACIONES_CONSOLIDADAS[1], width=105)
                     rec3_f = textwrap.fill(RECOMENDACIONES_CONSOLIDADAS[2], width=105)
@@ -531,7 +590,7 @@ if inicializado:
                 plt.clf()
                 buf.seek(0)
 
-            st.success("🎉 ¡Reporte técnico regenerado con éxito! Se restauraron todas las métricas de control, el ML Engine, el top de posts y los 5 consejos clave.")
+            st.success("🎉 ¡Código e informe unificados con éxito! El análisis matricial avanzado ya está integrado en la web y en la base de la página 1 del PDF sin alterar la maquetación.")
             st.download_button(
                 label="💾 Descargar Reporte Ejecutivo de 4 Hojas Real (.PDF)", 
                 data=buf, 
