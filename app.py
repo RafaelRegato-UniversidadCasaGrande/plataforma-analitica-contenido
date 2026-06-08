@@ -12,6 +12,7 @@ from io import BytesIO
 from datetime import datetime
 import collections
 import re
+import textwrap  # Librería crítica para forzar el salto de línea y evitar desbordamientos
 
 # =========================================================================
 # 1. CONFIGURACIÓN DE LA INTERFAZ Y ESTILOS DE STREAMLIT
@@ -129,11 +130,9 @@ hitos_mes_actual = banco_hitos_anuales[mes_actual_num]
 # =========================================================================
 if archivo_cargado is not None:
     try:
-        # Lectura inicial robusta con codificación UTF-8 estándar
         df_raw = pd.read_csv(archivo_cargado, encoding='utf-8')
         df_raw.columns = df_raw.columns.str.strip()
         
-        # Diccionario de sinónimos técnicos para unificación idiomática y de formato
         dicc_sinonimos = {
             'Tipo de publicación': ['Tipo de publicación', 'Tipo', 'Format', 'Post type', 'Type', 'Formato'],
             'Hora de publicación': ['Hora de publicación', 'Hora', 'Published Time', 'Time', 'Date', 'Fecha', 'Created time'],
@@ -142,13 +141,11 @@ if archivo_cargado is not None:
             'Título': ['Título', 'Texto', 'Title', 'Descripción', 'Post text', 'Texto de la publicación', 'Description', 'Caption']
         }
         
-        # Bucle de armonización automática de columnas
         for col_estandar, lista_alternativas in dicc_sinonimos.items():
             for alt in lista_alternativas:
                 if alt in df_raw.columns and col_estandar not in df_raw.columns:
                     df_raw[col_estandar] = df_raw[alt]
         
-        # Control e inyección de contingencia contra datasets ajenos o corruptos
         columnas_requeridas = ['Tipo de publicación', 'Hora de publicación', 'Interacciones', 'Impresiones', 'Título']
         for col in columnas_requeridas:
             if col not in df_raw.columns:
@@ -158,17 +155,12 @@ if archivo_cargado is not None:
                 else: df_raw[col] = ''
 
         df_fb = df_raw.copy()
-        # Tratamiento anti-crash para la conversión forzada de tipos numéricos
         df_fb['Interacciones'] = pd.to_numeric(df_fb['Interacciones'], errors='coerce').fillna(0)
         df_fb['Impresiones'] = pd.to_numeric(df_fb['Impresiones'], errors='coerce').fillna(0)
         df_fb['Título'] = df_fb['Título'].astype(str).fillna('')
 
-        # -----------------------------------------------------------------
-        # ALGORITMO EXCLUSIVO DE DISTINCIÓN DE CANALES (FB vs IG)
-        # -----------------------------------------------------------------
+        # Algoritmo de distinción de canales
         total_interac_global = df_fb['Interacciones'].sum()
-        
-        # Filtros de patrones de nombres asignados por Meta para segmentar canales
         es_instagram = df_fb['Tipo de publicación'].str.lower().str.contains('instagram|reel|historia|ig')
         df_ig_sub = df_fb[es_instagram]
         df_fb_sub = df_fb[~es_instagram]
@@ -183,7 +175,6 @@ if archivo_cargado is not None:
             porcentaje_ig = 50.0
             porcentaje_fb = 50.0
 
-        # Parsing temporal seguro con manejo idiomático local
         horas_limpias, dias_semana, meses_publicacion = [], [], []
         dias_espanol = {0: 'Lunes', 1: 'Martes', 2: 'Miércoles', 3: 'Jueves', 4: 'Viernes', 5: 'Sábado', 6: 'Domingo'}
         
@@ -208,7 +199,6 @@ if archivo_cargado is not None:
         df_fb['Dia_Semana'] = dias_semana
         df_fb['Mes_Num'] = meses_publicacion
         
-        # Mapeo y segmentación analítica de Trimestres (Q)
         condiciones_q = [df_fb['Mes_Num'].isin([1,2,3]), df_fb['Mes_Num'].isin([4,5,6]), df_fb['Mes_Num'].isin([7,8,9]), df_fb['Mes_Num'].isin([10,11,12])]
         valores_q = ['Trimestre Q1 (Ene-Mar)', 'Trimestre Q2 (Abr-Jun)', 'Trimestre Q3 (Jul-Sep)', 'Trimestre Q4 (Oct-Dic)']
         df_fb['Trimestre'] = np.select(condiciones_q, valores_q, default='Trimestre Q1 (Ene-Mar)')
@@ -223,7 +213,6 @@ if archivo_cargado is not None:
 # 6. MOTOR ESTADÍSTICO Y MACHINE LEARNING
 # =========================================================================
 if data_lista:
-    # NLP básico y limpieza de texto mediante expresiones regulares robustas
     texto_puro = " ".join(df_fb['Título'].str.lower().tolist())
     palabras = re.findall(r'\b[a-záéíóúñ]{4,15}\b', texto_puro)
     stop_words_es = {'para', 'esta', 'este', 'como', 'pero', 'todo', 'con', 'las', 'los', 'del', 'una', 'uno', 'unos', 'unas'}
@@ -233,31 +222,23 @@ if data_lista:
     while len(top_conceptos) < 4: top_conceptos.append("contenido")
         
     giro_comercial_dinamico = f"Especialista en {top_conceptos[0].capitalize()}, {top_conceptos[1]}, {top_conceptos[2]} y {top_conceptos[3]}"
-    media_general_interacciones = df_fb['Interacciones'].mean()
     
-    # Agrupaciones cronológicas para curvas de tendencia
     df_dias = df_fb.groupby('Dia_Semana', as_index=False)['Interacciones'].sum()
     if df_dias['Interacciones'].sum() == 0: df_dias['Interacciones'] = np.random.randint(5, 15, size=len(df_dias)) 
     
     df_horas = df_fb.groupby('Hora_Num', as_index=False)['Interacciones'].sum()
     df_horas = pd.merge(pd.DataFrame({'Hora_Num': list(range(24))}), df_horas, on='Hora_Num', how='left').fillna(0)
     
-    # Extracción de picos y valles operativos
     dia_pico = df_dias.sort_values(by='Interacciones', ascending=False).iloc[0]['Dia_Semana'] if not df_dias.empty else "Lunes"
     segundo_dia = df_dias.sort_values(by='Interacciones', ascending=False).iloc[1]['Dia_Semana'] if len(df_dias) > 1 else "Martes"
     dia_valle = df_dias.sort_values(by='Interacciones', ascending=True).iloc[0]['Dia_Semana'] if not df_dias.empty else "Domingo"
     hora_pico = df_horas.sort_values(by='Interacciones', ascending=False).iloc[0]['Hora_Num'] if not df_horas.empty else 12
     if hora_pico == 0: hora_pico = 12
     
-    df_trimestres = df_fb.groupby('Trimestre', as_index=False)['Interacciones'].agg(['sum', 'mean']).reset_index()
-    q_max = df_trimestres.sort_values(by='sum', ascending=False).iloc[0]['Trimestre'] if not df_trimestres.empty else 'Trimestre Q1 (Ene-Mar)'
-    
-    # Métricas consolidadas estructurales por formato
     df_agrupado = df_fb.groupby('Tipo de publicación').agg(Cantidad=('Tipo de publicación', 'count'), Total_Interacciones=('Interacciones', 'sum'), Promedio_Interacciones=('Interacciones', 'mean')).reset_index()
     form_top = df_agrupado.sort_values(by='Promedio_Interacciones', ascending=False).iloc[0]['Tipo de publicación'] if not df_agrupado.empty else "Post"
     form_peor = df_agrupado.sort_values(by='Promedio_Interacciones', ascending=True).iloc[0]['Tipo de publicación'] if not df_agrupado.empty else "Post"
 
-    # Entrenamiento del modelado predictivo (Sklearn LinearRegression)
     df_model = pd.get_dummies(df_fb[['Tipo de publicación', 'Interacciones']].dropna(), columns=['Tipo de publicación'])
     X = df_model.drop('Interacciones', axis=1)
     y = df_model['Interacciones']
@@ -273,14 +254,12 @@ if data_lista:
     indice_crecimiento = min(85.0, max(12.5, (abs(base_coef + promedio_historico) / promedio_historico) * 15))
     margen_error = min(10.0, max(1.0, (error_estandar_residual / promedio_historico) * 3))
 
-    # -----------------------------------------------------------------
-    # ESTRUCTURA CENTRALIZADA DE LAS RECOMENDACIONES (SIMETRÍA WEB-PDF)
-    # -----------------------------------------------------------------
+    # Recomendaciones consolidadas
     RECOMENDACIONES_CONSOLIDADAS = [
-        f"1. ASIGNACIÓN ASIMÉTRICA DE RECURSOS: Concentrar el 60% del presupuesto de diseño y pauta en el formato líder ({form_top.upper()}), el cual registra la mayor tracción unitaria de engagement en la cuenta.",
-        f"2. REESTRUCTURACIÓN DE FORMATOS CRÍTICOS: Someter a auditoría creativa inmediata el formato {form_peor.upper()}, debido a que los datos muestran un rendimiento crítico que deprime el alcance orgánico histórico.",
-        f"3. CALIBRACIÓN DE HORARIOS PRE-PICO: Programar de manera estricta a las {int(hora_pico)-1}:30 H. Esto garantiza una indexación algorítmica precoz exactamente 30 minutos antes del pico máximo detectado a las {int(hora_pico)}:00 H.",
-        f"4. PROTECCIÓN EN VENTANAS VALLE CON HITOS: Restringir publicaciones transaccionales el día {dia_valle.upper()} y adaptar la comunicación de {mes_actual_nombre.upper()} estrictamente al hito estacional: '{hitos_mes_actual['Semana 1']}'."
+        f"1. ASIGNACIÓN ASIMÉTRICA DE RECURSOS: Concentrar el 60% del presupuesto de diseño y pauta en el formato líder ({form_top.upper()}), el cual registra la mayor tracción de engagement.",
+        f"2. REESTRUCTURACIÓN DE FORMATOS CRÍTICOS: Someter a auditoría creativa inmediata el formato {form_peor.upper()}, debido a que los datos muestran un rendimiento crítico que deprime el alcance.",
+        f"3. CALIBRACIÓN DE HORARIOS PRE-PICO: Programar de manera estricta a las {int(hora_pico)-1}:30 H. Esto garantiza una indexación algorítmica precoz 30 minutos antes del pico máximo detectado a las {int(hora_pico)}:00 H.",
+        f"4. PROTECCIÓN EN VENTANAS VALLE CON HITOS: Restringir publicaciones transaccionales el día {dia_valle.upper()} y adaptar la comunicación de {mes_actual_nombre.upper()} al hito estacional: '{hitos_mes_actual['Semana 1']}'."
     ]
 
 # =========================================================================
@@ -298,7 +277,6 @@ if data_lista:
         st.info(f"🔍 **Giro Comercial Analizado:** {giro_comercial_dinamico}")
         st.success(f"📅 **Mes de Operación Activo:** {mes_actual_nombre}")
         
-        # Inyección de las métricas de distinción de canales en la UI
         c1, c2, c3, c4 = st.columns(4)
         with c1: st.metric("Publicaciones Auditadas", len(df_fb))
         with c2: st.metric("Total Interacciones", f"{int(df_fb['Interacciones'].sum()):,}")
@@ -340,7 +318,7 @@ if data_lista:
         st.plotly_chart(px.line(df_horas, x='Hora_Num', y='Interacciones', title="Curva de Rendimiento por Hora", color_discrete_sequence=PALETA_PASTEL), use_container_width=True)
 
     # -------------------------------------------------------------------------
-    # TAB: EXPORTAR REPORTE PDF - CORRECCIÓN DE PARÁMETROS 'bbox_transform' CORREGIDO
+    # TAB: EXPORTAR REPORTE PDF - INTEGRACIÓN DE TEXTWRAP ANTI-DESBORDAMIENTO
     # -------------------------------------------------------------------------
     with tab_exportar:
         st.header("📄 Descarga de Reporte de Consultoría (4 Páginas Reales)")
@@ -349,11 +327,8 @@ if data_lista:
         if st.button("🚀 Compilar Reporte PDF Paginado"):
             with st.spinner("Compilando páginas vectoriales limpias con diseño cuadrado perfecto..."):
                 buf = BytesIO()
-                
-                # Sincronización exacta de la paleta pastel para el backend gráfico
                 colores_render = PALETA_PASTEL[:max(1, len(df_agrupado))]
                 
-                # --- CONTROL DE CONTINGENCIA MATEMÁTICA PARA PASTEL EN CERO ---
                 datos_cantidad = df_agrupado['Cantidad'].tolist()
                 etiquetas_cantidad = df_agrupado['Tipo de publicación'].tolist()
                 if sum(datos_cantidad) == 0:
@@ -369,15 +344,12 @@ if data_lista:
                 with PdfPages(buf) as pdf:
                     
                     # ---------------------------------------------------------
-                    # PÁGINA 1: ARQUITECTURA TRANSPARENTE CUADRADA - LEYENDAS INFERIORES
+                    # PÁGINA 1: DIAGNÓSTICO DE FORMATOS
                     # ---------------------------------------------------------
                     fig1 = plt.figure(figsize=(11, 8.5))
-                    
-                    # Malla estructurada holgada para evitar colisiones por desbordamiento
                     gs = gridspec.GridSpec(3, 2, height_ratios=[1.1, 1.9, 1.0], figure=fig1)
                     gs.update(left=0.07, right=0.93, top=0.86, bottom=0.08, hspace=0.45, wspace=0.3)
                     
-                    # Lienzo de fondo institucional
                     ax_bg = fig1.add_axes([0, 0, 1, 1], zorder=0)
                     ax_bg.axis('off')
                     ax_bg.add_patch(patches.Rectangle((0, 0), 1, 1, facecolor='#FAFAFA'))
@@ -386,7 +358,6 @@ if data_lista:
                     ax_bg.text(0.04, 0.92, f"{giro_comercial_dinamico.upper()} | PÁGINA 1: DIAGNÓSTICO DE FORMATOS", color='#90CAF9', fontsize=9)
                     ax_bg.text(0.04, 0.03, f"Universidad Casa Grande — Reporte Técnico para {nombre_negocio.upper()} | Página 1", color='#78909C', fontsize=9)
 
-                    # Subplot 1: KPIs Básicos Unificados con Distinción de Canales
                     ax_kpi1 = fig1.add_subplot(gs[0, 0])
                     ax_kpi1.axis('off')
                     ax_kpi1.text(0.0, 0.90, "MÉTRICAS BASE DEL CANVAS", color='#1A237E', fontsize=11, fontweight='bold')
@@ -399,41 +370,37 @@ if data_lista:
                     )
                     ax_kpi1.text(0.0, 0.75, txt_b1, color='#37474F', fontsize=10, fontfamily='monospace', verticalalignment='top', linespacing=1.3)
                     
-                    # Subplot 2: Modelado Predictivo IA
                     ax_kpi2 = fig1.add_subplot(gs[0, 1])
                     ax_kpi2.axis('off')
                     ax_kpi2.text(0.0, 0.90, "PREDICCIONES DEL MOTOR (ML)", color='#1A237E', fontsize=11, fontweight='bold')
                     txt_b2 = f"• POTENCIAL DE CRECIMIENTO: +{indice_crecimiento:.1f}%\n• MARGEN DE ERROR DE EXPOSICIÓN: ±{margen_error:.1f}%\n• ESTABILIDAD HISTÓRICA: Óptima"
                     ax_kpi2.text(0.0, 0.75, txt_b2, color='#1B5E20', fontsize=10, fontfamily='monospace', verticalalignment='top', linespacing=1.3)
 
-                    # Subplot 3: Torta de Volumen (CORREGIDO: bbox_transform)
                     ax_pie1 = fig1.add_subplot(gs[1, 0])
                     ax_pie1.set_aspect('equal')
                     wedges1, _ = ax_pie1.pie(datos_cantidad, colors=colores_render, radius=0.75, startangle=90)
                     ax_pie1.set_title("Volumen en la Parrilla", fontsize=10, color='#1A237E', fontweight='bold', pad=5)
                     ax_pie1.legend(wedges1, etiquetas_cantidad, loc="upper center", bbox_transform=ax_pie1.transAxes, bbox_to_anchor=(0.5, -0.08), fontsize=7.5, frameon=False, ncol=2)
                     
-                    # Subplot 4: Torta de Interacciones (CORREGIDO: bbox_transform)
                     ax_pie2 = fig1.add_subplot(gs[1, 1])
                     ax_pie2.set_aspect('equal')
                     wedges2, _ = ax_pie2.pie(datos_interacciones, colors=colores_render, radius=0.75, startangle=90)
                     ax_pie2.set_title("Masa Crítica (Engagement)", fontsize=10, color='#1A237E', fontweight='bold', pad=5)
                     ax_pie2.legend(wedges2, etiquetas_interacciones, loc="upper center", bbox_transform=ax_pie2.transAxes, bbox_to_anchor=(0.5, -0.08), fontsize=7.5, frameon=False, ncol=2)
 
-                    # Subplot 5: Desglose Técnico de Cierre Inferior
                     ax_desc = fig1.add_subplot(gs[2, :])
                     ax_desc.axis('off')
                     ax_desc.text(0.0, 0.85, "ANÁLISIS DE RENDIMIENTO UNITARIO E IMPACTO ESTRUCTURAL", color='#1A237E', fontsize=11, fontweight='bold')
                     txt_desglose = ""
                     for _, r in df_agrupado.head(2).iterrows():
-                        txt_desglose += f"• El formato {r['Tipo de publicación'].upper()} registra {r['Cantidad']} publicaciones, logrando un engagement promedio de {r['Promedio_Interacciones']:.1f} puntos por post.\n"
+                        txt_desglose += f"• El formato {r['Tipo de publicación'].upper()} registra {r['Cantidad']} publicaciones, logrando un engagement promedio de {r['Promedio_Interacciones']:.1f} puntos.\n"
                     ax_desc.text(0.0, 0.65, txt_desglose, color='#37474F', fontsize=10, linespacing=1.4, verticalalignment='top')
                     
                     pdf.savefig(fig1)
                     plt.close(fig1)
                     
                     # ---------------------------------------------------------
-                    # PÁGINA 2: COMPORTAMIENTO CRONOLÓGICO
+                    # PÁGINA 2: COMPORTAMIENTO CRONOLÓGICO (AJUSTE DE MARGENES DE GRÁFICOS)
                     # ---------------------------------------------------------
                     fig2, ax2 = plt.subplots(figsize=(11, 8.5))
                     ax2.axis('off')
@@ -443,37 +410,40 @@ if data_lista:
                     ax2.text(0.04, 0.94, f"AUDITORÍA INTELIGENTE DE REDES SOCIALES: {nombre_negocio.upper()}", color='white', fontsize=14, fontweight='bold', transform=ax2.transAxes)
                     ax2.text(0.04, 0.91, f"ANÁLISIS TEMPORAL | PÁGINA 2: COMPORTAMIENTO DE AUDIENCIA", color='#90CAF9', fontsize=9, transform=ax2.transAxes)
                     
-                    # Gráfico de Líneas - Días
+                    # Rediseño de coordenadas para encapsular las curvas dentro del recuadro
                     ax_sub_line1 = fig2.add_axes([0.08, 0.48, 0.38, 0.34])
                     ax_sub_line1.plot(df_dias['Dia_Semana'].astype(str), df_dias['Interacciones'], color='#AED6F1', linewidth=3, marker='o')
                     ax_sub_line1.set_title("Engagement por Día de la Semana", fontsize=10, color='#1A237E', fontweight='bold')
                     ax_sub_line1.tick_params(labelsize=8)
                     ax_sub_line1.grid(True, linestyle='--', alpha=0.5)
                     
-                    # Gráfico de Líneas - Horas
                     ax_sub_line2 = fig2.add_axes([0.54, 0.48, 0.38, 0.34])
                     ax_sub_line2.plot(df_horas['Hora_Num'], df_horas['Interacciones'], color='#F5B7B1', linewidth=3, marker='o')
                     ax_sub_line2.set_title("Rendimiento por Hora (24H)", fontsize=10, color='#1A237E', fontweight='bold')
                     ax_sub_line2.tick_params(labelsize=8)
                     ax_sub_line2.grid(True, linestyle='--', alpha=0.5)
                     
+                    # Recuadro blanco inferior para conclusiones
                     ax2.add_patch(patches.Rectangle((0.04, 0.08), 0.92, 0.34, facecolor='white', edgecolor='#CFD8DC', linewidth=1, transform=ax2.transAxes))
-                    ax2.text(0.06, 0.38, "CONCLUSIONES CRONOLÓGICAS DE TRACCIÓN ALGORÍTMICA", color='#1A237E', fontsize=11, fontweight='bold', transform=ax2.transAxes)
-                    txt_temporal = (
-                        f"• VENTANA ÓPTIMA SEMANAL (DÍA PICO): El día {dia_pico.upper()} acumula la mayor tracción de la cuenta,\n"
-                        f"  postulándose como el espacio predilecto para campañas de conversión directa o lanzamientos.\n\n"
+                    ax2.text(0.06, 0.37, "CONCLUSIONES CRONOLÓGICAS DE TRACCIÓN ALGORÍTMICA", color='#1A237E', fontsize=11, fontweight='bold', transform=ax2.transAxes)
+                    
+                    txt_temporal_puro = (
+                        f"• VENTANA ÓPTIMA SEMANAL (DÍA PICO): El día {dia_pico.upper()} acumula la mayor tracción de la cuenta, "
+                        f"postulándose como el espacio predilecto para campañas de conversión directa o lanzamientos.\n\n"
                         f"• COHORTE DE SEGUNDO ORDEN: El día {segundo_dia.upper()} actúa como un amortiguador de alcance estable.\n\n"
-                        f"• HORARIO CRÍTICO DE INDEXACIÓN: Publicar a las {int(hora_pico)}:00 H maximiza la exposición inicial del algoritmo.\n"
-                        f"  Se sugiere programar las publicaciones 30 minutos antes de esta hora."
+                        f"• HORARIO CRÍTICO DE INDEXACIÓN: Publicar a las {int(hora_pico)}:00 H maximiza la exposición inicial del algoritmo. "
+                        f"Se sugiere programar las publicaciones 30 minutos antes de esta hora."
                     )
-                    ax2.text(0.06, 0.34, txt_temporal, color='#37474F', fontsize=10, linespacing=1.5, verticalalignment='top', transform=ax2.transAxes)
+                    # Forzamos el salto de línea cada 105 caracteres para evitar que se desborde el cuadro blanco
+                    txt_temporal_ajustado = textwrap.fill(txt_temporal_puro, width=105)
+                    ax2.text(0.06, 0.33, txt_temporal_ajustado, color='#37474F', fontsize=10, linespacing=1.4, verticalalignment='top', transform=ax2.transAxes)
                     
                     ax2.text(0.04, 0.03, f"Universidad Casa Grande — Reporte Técnico para {nombre_negocio.upper()} | Página 2", color='#78909C', fontsize=9, transform=ax2.transAxes)
                     pdf.savefig(fig2)
                     plt.close(fig2)
                     
                     # ---------------------------------------------------------
-                    # PÁGINA 3: PLANIFICACIÓN OPERATIVA SEMANAL
+                    # PÁGINA 3: PLANIFICACIÓN OPERATIVA SEMANAL (TEXTWRAP INTEGRADO)
                     # ---------------------------------------------------------
                     fig3, ax3 = plt.subplots(figsize=(11, 8.5))
                     ax3.axis('off')
@@ -486,28 +456,21 @@ if data_lista:
                     ax3.add_patch(patches.Rectangle((0.04, 0.08), 0.92, 0.76, facecolor='white', edgecolor='#CFD8DC', linewidth=1, transform=ax3.transAxes))
                     ax3.text(0.06, 0.80, f"MATRIZ ESTRATÉGICA PREDICTIVA DE PLANIFICACIÓN - {mes_actual_nombre.upper()}", color='#1A237E', fontsize=12, fontweight='bold', transform=ax3.transAxes)
                     
-                    txt_b3 = (
-                        f"• SEMANA 1 OPERATIVA:\n"
-                        f"  [Estrategia]: Forzar la exposición del Formato Líder ({form_top.upper()}) para capturar volumen orgánico.\n"
-                        f"  [Hito Mensual Sincronizado]: {hitos_mes_actual['Semana 1']}\n\n"
-                        f"• SEMANA 2 OPERATIVA:\n"
-                        f"  [Estrategia]: Inyectar contenido interactivo en el segundo día clave ({segundo_dia.upper()}) protegiendo el alcance de la marca.\n"
-                        f"  [Hito Mensual Sincronizado]: {hitos_mes_actual['Semana 2']}\n\n"
-                        f"• SEMANA 3 OPERATIVA:\n"
-                        f"  [Estrategia]: Ejecutar campañas transaccionales fuertes en el Día de Oro detectado ({dia_pico.upper()}).\n"
-                        f"  [Hito Mensual Sincronizado]: {hitos_mes_actual['Semana 3']}\n\n"
-                        f"• SEMANA 4 OPERATIVA:\n"
-                        f"  [Estrategia]: Programar publicaciones estructuradas en el horario pre-pico de las {int(hora_pico)-1}:30 H.\n"
-                        f"  [Hito Mensual Sincronizado]: {hitos_mes_actual['Semana 4']}"
-                    )
-                    ax3.text(0.06, 0.74, txt_b3, color='#37474F', fontsize=10.5, linespacing=1.6, verticalalignment='top', transform=ax3.transAxes)
+                    # Construcción con límites horizontales estrictos por bloque semanal
+                    txt_s1 = textwrap.fill(f"• SEMANA 1 OPERATIVA:\n  [Estrategia]: Forzar la exposición del Formato Líder ({form_top.upper()}) para capturar volumen orgánico.\n  [Hito Mensual Sincronizado]: {hitos_mes_actual['Semana 1']}", width=105)
+                    txt_s2 = textwrap.fill(f"• SEMANA 2 OPERATIVA:\n  [Estrategia]: Inyectar contenido interactivo en el segundo día clave ({segundo_dia.upper()}) protegiendo el alcance de la marca.\n  [Hito Mensual Sincronizado]: {hitos_mes_actual['Semana 2']}", width=105)
+                    txt_s3 = textwrap.fill(f"• SEMANA 3 OPERATIVA:\n  [Estrategia]: Ejecutar campañas transaccionales fuertes en el Día de Oro detectado ({dia_pico.upper()}).\n  [Hito Mensual Sincronizado]: {hitos_mes_actual['Semana 3']}", width=105)
+                    txt_s4 = textwrap.fill(f"• SEMANA 4 OPERATIVA:\n  [Estrategia]: Programar publicaciones estructuradas en el horario pre-pico de las {int(hora_pico)-1}:30 H.\n  [Hito Mensual Sincronizado]: {hitos_mes_actual['Semana 4']}", width=105)
+                    
+                    txt_b3_completo = f"{txt_s1}\n\n{txt_s2}\n\n{txt_s3}\n\n{txt_s4}"
+                    ax3.text(0.06, 0.75, txt_b3_completo, color='#37474F', fontsize=10, linespacing=1.4, verticalalignment='top', transform=ax3.transAxes)
                     
                     ax3.text(0.04, 0.03, f"Universidad Casa Grande — Reporte Técnico para {nombre_negocio.upper()} | Página 3", color='#78909C', fontsize=9, transform=ax3.transAxes)
                     pdf.savefig(fig3)
                     plt.close(fig3)
                     
                     # ---------------------------------------------------------
-                    # PÁGINA 4: EXACTAMENTE 4 DIRECTRICES TÉCNICAS ESTRATÉGICAS
+                    # PÁGINA 4: EXACTAMENTE 4 DIRECTRICES TÉCNICAS (BLOQUEADO ANTI-DESBORDAMIENTO)
                     # ---------------------------------------------------------
                     fig4, ax4 = plt.subplots(figsize=(11, 8.5))
                     ax4.axis('off')
@@ -520,24 +483,29 @@ if data_lista:
                     ax4.add_patch(patches.Rectangle((0.04, 0.08), 0.92, 0.76, facecolor='white', edgecolor='#CFD8DC', linewidth=1, transform=ax4.transAxes))
                     ax4.text(0.06, 0.80, "DIRECTRICES TÉCNICAS BASADAS EXCLUSIVAMENTE EN EL DATASET", color='#1A237E', fontsize=12, fontweight='bold', transform=ax4.transAxes)
                     
-                    txt_b4 = (
-                        f"{RECOMENDACIONES_CONSOLIDADAS[0]}\n\n"
-                        f"{RECOMENDACIONES_CONSOLIDADAS[1]}\n\n"
-                        f"{RECOMENDACIONES_CONSOLIDADAS[2]}\n\n"
-                        f"{RECOMENDACIONES_CONSOLIDADAS[3]}\n\n"
-                        f"• NOTA DE CONTROL: Monitorear desviaciones mediante pruebas A/B usando el margen predictivo estable de ±{margen_error:.1f}%."
+                    # Pasamos cada una de las 4 recomendaciones por textwrap de forma independiente
+                    rec1_f = textwrap.fill(RECOMENDACIONES_CONSOLIDADAS[0], width=110)
+                    rec2_f = textwrap.fill(RECOMENDACIONES_CONSOLIDADAS[1], width=110)
+                    rec3_f = textwrap.fill(RECOMENDACIONES_CONSOLIDADAS[2], width=110)
+                    rec4_f = textwrap.fill(RECOMENDACIONES_CONSOLIDADAS[3], width=110)
+                    
+                    txt_b4_completo = (
+                        f"{rec1_f}\n\n"
+                        f"{rec2_f}\n\n"
+                        f"{rec3_f}\n\n"
+                        f"{rec4_f}\n\n"
+                        f"• NOTA DE CONTROL: Monitorear desviaciones operativas mediante pruebas A/B usando el margen predictivo estable de ±{margen_error:.1f}%."
                     )
-                    ax4.text(0.06, 0.73, txt_b4, color='#37474F', fontsize=9.5, linespacing=1.5, verticalalignment='top', transform=ax4.transAxes)
+                    ax4.text(0.06, 0.74, txt_b4_completo, color='#37474F', fontsize=9.5, linespacing=1.4, verticalalignment='top', transform=ax4.transAxes)
                     
                     ax4.text(0.04, 0.03, f"Reporte unificado para {nombre_negocio.upper()}. Generado el {fecha_actual_sistema.strftime('%Y-%m-%d')} | Página 4", color='#78909C', fontsize=9, transform=ax4.transAxes)
                     pdf.savefig(fig4)
                     plt.close(fig4)
                 
-                # Reseteo y limpieza estricta del plot para evitar fugas de memoria RAM
                 plt.clf()
                 buf.seek(0)
 
-            st.success("🎉 ¡Tu reporte técnico de 4 páginas se ha compilado con un diseño cuadrado perfecto y libre de superposiciones!")
+            st.success("🎉 ¡Tu reporte técnico de 4 páginas se ha compilado con un diseño perfectamente encuadrado y alineado a los recuadros!")
             st.download_button(
                 label="💾 Descargar Reporte Ejecutivo de 4 Hojas Real (.PDF)", 
                 data=buf, 
