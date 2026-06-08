@@ -133,7 +133,7 @@ if archivo_cargado is not None:
         df_raw = pd.read_csv(archivo_cargado, encoding='utf-8')
         df_raw.columns = df_raw.columns.str.strip()
         
-        # Diccionario de sinonimos técnicos para unificación idiomática y de formato
+        # Diccionario de sinónimos técnicos para unificación idiomática y de formato
         dicc_sinonimos = {
             'Tipo de publicación': ['Tipo de publicación', 'Tipo', 'Format', 'Post type', 'Type', 'Formato'],
             'Hora de publicación': ['Hora de publicación', 'Hora', 'Published Time', 'Time', 'Date', 'Fecha', 'Created time'],
@@ -166,7 +166,6 @@ if archivo_cargado is not None:
         # -----------------------------------------------------------------
         # ALGORITMO EXCLUSIVO DE DISTINCIÓN DE CANALES (FB vs IG)
         # -----------------------------------------------------------------
-        # Analizamos heurísticamente los formatos típicos de Meta Business Suite
         total_interac_global = df_fb['Interacciones'].sum()
         
         # Filtros de patrones de nombres asignados por Meta para segmentar canales
@@ -181,7 +180,6 @@ if archivo_cargado is not None:
             porcentaje_ig = (interac_ig / total_interac_global) * 100
             porcentaje_fb = (interac_fb / total_interac_global) * 100
         else:
-            # Distribución neutra de contingencia si la cuenta no registra datos históricos
             porcentaje_ig = 50.0
             porcentaje_fb = 50.0
 
@@ -282,7 +280,7 @@ if data_lista:
         f"1. ASIGNACIÓN ASIMÉTRICA DE RECURSOS: Concentrar el 60% del presupuesto de diseño y pauta en el formato líder ({form_top.upper()}), el cual registra la mayor tracción unitaria de engagement en la cuenta.",
         f"2. REESTRUCTURACIÓN DE FORMATOS CRÍTICOS: Someter a auditoría creativa inmediata el formato {form_peor.upper()}, debido a que los datos muestran un rendimiento crítico que deprime el alcance orgánico histórico.",
         f"3. CALIBRACIÓN DE HORARIOS PRE-PICO: Programar de manera estricta a las {int(hora_pico)-1}:30 H. Esto garantiza una indexación algorítmica precoz exactamente 30 minutos antes del pico máximo detectado a las {int(hora_pico)}:00 H.",
-        f"4. PROTECCIÓN EN VENTANAS VALLE SCON HITOS: Restringir publicaciones transaccionales el día {dia_valle.upper()} y adaptar la comunicación de {mes_actual_nombre.upper()} estrictamente al hito estacional: '{hitos_mes_actual['Semana 1']}'."
+        f"4. PROTECCIÓN EN VENTANAS VALLE CON HITOS: Restringir publicaciones transaccionales el día {dia_valle.upper()} y adaptar la comunicación de {mes_actual_nombre.upper()} estrictamente al hito estacional: '{hitos_mes_actual['Semana 1']}'."
     ]
 
 # =========================================================================
@@ -342,7 +340,7 @@ if data_lista:
         st.plotly_chart(px.line(df_horas, x='Hora_Num', y='Interacciones', title="Curva de Rendimiento por Hora", color_discrete_sequence=PALETA_PASTEL), use_container_width=True)
 
     # -------------------------------------------------------------------------
-    # TAB: EXPORTAR REPORTE PDF - COORDENADAS PERFECTAS CON LEYENDA EXTERNA Y 4 RECOMENDACIONES
+    # TAB: EXPORTAR REPORTE PDF - CORRECCIÓN DE PARÁMETROS 'bbox_transform' CORREGIDO
     # -------------------------------------------------------------------------
     with tab_exportar:
         st.header("📄 Descarga de Reporte de Consultoría (4 Páginas Reales)")
@@ -408,20 +406,19 @@ if data_lista:
                     txt_b2 = f"• POTENCIAL DE CRECIMIENTO: +{indice_crecimiento:.1f}%\n• MARGEN DE ERROR DE EXPOSICIÓN: ±{margen_error:.1f}%\n• ESTABILIDAD HISTÓRICA: Óptima"
                     ax_kpi2.text(0.0, 0.75, txt_b2, color='#1B5E20', fontsize=10, fontfamily='monospace', verticalalignment='top', linespacing=1.3)
 
-                    # Subplot 3: Torta de Volumen (Radio ajustado + Leyenda externa baja)
+                    # Subplot 3: Torta de Volumen (CORREGIDO: bbox_transform)
                     ax_pie1 = fig1.add_subplot(gs[1, 0])
                     ax_pie1.set_aspect('equal')
-                    # No pasamos labels en ax_pie1.pie para limpiar los bordes del círculo
                     wedges1, _ = ax_pie1.pie(datos_cantidad, colors=colores_render, radius=0.75, startangle=90)
                     ax_pie1.set_title("Volumen en la Parrilla", fontsize=10, color='#1A237E', fontweight='bold', pad=5)
-                    ax_pie1.legend(wedges1, etiquetas_cantidad, loc="upper center", bbox_to_transform=ax_pie1.transAxes, bbox_to_anchor=(0.5, -0.05), fontsize=7.5, frameon=False, ncol=2)
+                    ax_pie1.legend(wedges1, etiquetas_cantidad, loc="upper center", bbox_transform=ax_pie1.transAxes, bbox_to_anchor=(0.5, -0.08), fontsize=7.5, frameon=False, ncol=2)
                     
-                    # Subplot 4: Torta de Interacciones (Radio ajustado + Leyenda externa baja)
+                    # Subplot 4: Torta de Interacciones (CORREGIDO: bbox_transform)
                     ax_pie2 = fig1.add_subplot(gs[1, 1])
                     ax_pie2.set_aspect('equal')
                     wedges2, _ = ax_pie2.pie(datos_interacciones, colors=colores_render, radius=0.75, startangle=90)
                     ax_pie2.set_title("Masa Crítica (Engagement)", fontsize=10, color='#1A237E', fontweight='bold', pad=5)
-                    ax_pie2.legend(wedges2, etiquetas_interacciones, loc="upper center", bbox_to_transform=ax_pie2.transAxes, bbox_to_anchor=(0.5, -0.05), fontsize=7.5, frameon=False, ncol=2)
+                    ax_pie2.legend(wedges2, etiquetas_interacciones, loc="upper center", bbox_transform=ax_pie2.transAxes, bbox_to_anchor=(0.5, -0.08), fontsize=7.5, frameon=False, ncol=2)
 
                     # Subplot 5: Desglose Técnico de Cierre Inferior
                     ax_desc = fig1.add_subplot(gs[2, :])
@@ -510,7 +507,7 @@ if data_lista:
                     plt.close(fig3)
                     
                     # ---------------------------------------------------------
-                    # PÁGINA 4: EXACTAMENTE 4 DIRECTRICES TÉCNICAS ESTRATÉGICAS (SIMÉTRICO)
+                    # PÁGINA 4: EXACTAMENTE 4 DIRECTRICES TÉCNICAS ESTRATÉGICAS
                     # ---------------------------------------------------------
                     fig4, ax4 = plt.subplots(figsize=(11, 8.5))
                     ax4.axis('off')
@@ -523,7 +520,6 @@ if data_lista:
                     ax4.add_patch(patches.Rectangle((0.04, 0.08), 0.92, 0.76, facecolor='white', edgecolor='#CFD8DC', linewidth=1, transform=ax4.transAxes))
                     ax4.text(0.06, 0.80, "DIRECTRICES TÉCNICAS BASADAS EXCLUSIVAMENTE EN EL DATASET", color='#1A237E', fontsize=12, fontweight='bold', transform=ax4.transAxes)
                     
-                    # Formateo multilínea de las 4 recomendaciones reales y unificadas
                     txt_b4 = (
                         f"{RECOMENDACIONES_CONSOLIDADAS[0]}\n\n"
                         f"{RECOMENDACIONES_CONSOLIDADAS[1]}\n\n"
